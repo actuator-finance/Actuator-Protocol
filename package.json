@@ -1,0 +1,34 @@
+{
+  "name": "actuator",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "runLocal": "npx hardhat node",
+    "testScript": "npx hardhat run --network localhost scripts/dev/test.ts",
+    "setupLocal": "npx hardhat run --network localhost scripts/dev/setup.ts",
+    "deployLocal": "npx hardhat run --network localhost scripts/dev/deploy.ts",
+    "stressTest": "npx hardhat run --network localhost scripts/dev/stressTest.ts",
+    "deploy": "npx hardhat run --network dev_remote scripts/dev/deploy.ts",
+    "setup": "npx hardhat run --network dev_remote scripts/dev/setup.ts",
+    "coverage": "npx hardhat coverage"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "hardhat": "^2.22.2",
+    "solidity-coverage": "^0.8.12"
+  },
+  "dependencies": {
+    "@apollo/client": "^3.10.3",
+    "@openzeppelin/contracts": "^5.0.2",
+    "dotenv": "^16.4.5",
+    "graphql": "^16.8.1",
+    "lodash": "^4.17.21",
+    "node-fetch": "^3.3.2",
+    "react": "^18.3.1"
+  }
+}
