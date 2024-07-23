@@ -1,54 +1,58 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.26;
 
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { HEXTimeToken } from "./HEXTimeToken.sol";
 import { HEXTimeTokenManager } from "./HEXTimeTokenManager.sol";
 
-contract Actuator is ERC20, Ownable {
+contract Actuator is ERC20 {
     uint256 public totalShares;
     uint256 public lastUpdate;
     uint256 public totalDividendPoints;
     uint256 pointMultiplier = 10e18;
 
-    HEXTimeTokenManager private _httm;
     uint256 private constant MIN_STAKE_TIME = 90 days;
 
-    mapping(address => uint72[]) public depositedMaturities;
+    HEXTimeTokenManager public _httm;
+    address public masterChef;
+    mapping(address => uint16[]) public depositedMaturities;
 
     constructor(
         address _httmAddress
     ) 
         ERC20('Actuator', 'ACTR') 
-        Ownable(msg.sender)
     {      
         _httm = HEXTimeTokenManager(_httmAddress);
+        masterChef = msg.sender;
     }
 
-    function mint(address to, uint256 amount) external onlyOwner {
+    modifier onlyMasterChef() {
+        require(msg.sender == masterChef, "A042");
+        _;
+    }
+
+    function mint(address to, uint256 amount) external onlyMasterChef {
         _mint(to, amount);
-    }
-
-    function burn(address from, uint256 amount) external onlyOwner {
-        _burn(from, amount);
     }
 
     function vaultCount(
         address user
     )
-        public
+        external
         view
         returns (uint256)
     {
         return depositedMaturities[user].length;
     }
 
-    function deposit(uint72 maturity, uint256 amount) external {
-        (, address tokenAddress) = _httm.maturityToInfo(uint16(maturity));
+    function deposit(uint16 maturity, uint256 amount) external {
+        require(amount > 0, "A040");
+        
+        (, address tokenAddress) = _httm.maturityToInfo(maturity);
         require(tokenAddress != address(0), "A033");
-        uint72[] storage miners = depositedMaturities[msg.sender];
+        
+        uint16[] storage miners = depositedMaturities[msg.sender];
         miners.push(maturity);
 
         uint256 newAmount = HEXTimeToken(tokenAddress).deposit(msg.sender, amount);
@@ -59,20 +63,20 @@ contract Actuator is ERC20, Ownable {
     }
 
     function increaseDeposit(uint256 index, uint256 amount) external {
-        uint72 maturity = depositedMaturities[msg.sender][index];
+        require(amount > 0, "A040");
+        uint16 maturity = depositedMaturities[msg.sender][index];
+        
         (, address tokenAddress) = _httm.maturityToInfo(uint16(maturity));
         uint256 newAmount = HEXTimeToken(tokenAddress).deposit(msg.sender, amount);
-        require(newAmount == amount, "A035");
-    }
+        require(newAmount > amount, "A035");
 
-    function collectFees(uint256 index) external {
-        uint72 maturity = depositedMaturities[msg.sender][index];
-        (, address tokenAddress) = _httm.maturityToInfo(uint16(maturity));
-        HEXTimeToken(tokenAddress).collectFees(msg.sender);
+        // bypass allowance
+        _transfer(msg.sender, address(this), amount);
     }
 
     function withdraw(uint256 index, uint256 amount) external {
-        uint72 maturity = depositedMaturities[msg.sender][index];
+        require(amount > 0, "A041");
+        uint16 maturity = depositedMaturities[msg.sender][index];
         (, address tokenAddress) = _httm.maturityToInfo(uint16(maturity));
         (uint256 newAmount, uint256 capitalAdded) = HEXTimeToken(tokenAddress).withdraw(msg.sender, amount);
 
@@ -80,7 +84,7 @@ contract Actuator is ERC20, Ownable {
             _pruneFeeMiners(msg.sender, index);
         }
 
-        uint servedTime = block.timestamp - capitalAdded;        
+        uint256 servedTime = block.timestamp - capitalAdded;        
         if (servedTime < MIN_STAKE_TIME) {
             // Penalty for early withdrawal
             uint256 remainder = amount * servedTime / MIN_STAKE_TIME;
@@ -102,7 +106,7 @@ contract Actuator is ERC20, Ownable {
     )
         private
     {
-        uint72[] storage list = depositedMaturities[account];
+        uint16[] storage list = depositedMaturities[account];
         uint256 lastIndex = list.length - 1;
 
         if (index != lastIndex) {

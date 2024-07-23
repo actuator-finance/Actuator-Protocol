@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.26;
 
-import "hardhat/console.sol";
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
-import '@openzeppelin/contracts/access/Ownable.sol';
+// import "hardhat/console.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { SafeERC20 } from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import { Actuator } from "./Actuator.sol"; 
 import { HEXTimeTokenManager } from "./HEXTimeTokenManager.sol"; 
 import { IPulseXFactory } from "./interfaces/PulseXFactory.sol"; 
@@ -16,9 +15,6 @@ contract MasterChef {
     using SafeERC20 for IERC20;
 
     uint256 constant YEAR = 365 days;
-    uint256 constant FIRST_YEAR_ISSUANCE = 400000000 * 10**18;
-    uint256 constant SECOND_YEAR_ISSUANCE = 200000000 * 10**18;
-    uint256 constant THIRD_YEAR_ISSUANCE = 150000000 * 10**18;
     
     address public immutable _hexAddress;
     uint256[3] public farmEmissionSchedule;
@@ -72,11 +68,11 @@ contract MasterChef {
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
-    event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
 
     constructor(
         address hexAddress,
         address teamAddress,
+        address _factoryAddress,
         uint256 _startTime,
         uint256[3] memory _farmEmissionSchedule,
         uint256[3] memory _teamEmissionSchedule
@@ -89,25 +85,16 @@ contract MasterChef {
         teamEmissionSchedule = _teamEmissionSchedule;
         _teamAddress = teamAddress;
         _hexAddress = hexAddress;
+        factory = IPulseXFactory(_factoryAddress);
     }
 
     function poolLength() external view returns (uint256) {
         return poolInfo.length;
     }
 
-    function checkForDuplicate(IERC20 _lpToken) internal view {
-        uint256 length = poolInfo.length;
-        for (uint256 _pid = 0; _pid < length; _pid++) {
-            require(poolInfo[_pid].lpToken != _lpToken, "A028");
-        }
-
-    }
-
     // Add a new lp to the pool. 
     function _add(uint256 _allocPoint, IERC20 _lpToken) private {
         require(_allocPoint <= MaxAllocPoint, "A029");
-
-        checkForDuplicate(_lpToken); // ensure you cant add duplicate pools
 
         uint256 lastRewardTime = block.timestamp > startTime ? block.timestamp : startTime;
         totalAllocPoint = totalAllocPoint + _allocPoint;
@@ -198,24 +185,27 @@ contract MasterChef {
     }
 
     // Update reward variables for all pools. 
-    function massUpdatePools() public {
-        uint256 length = poolInfo.length;
-        for (uint256 pid = 0; pid < length; ++pid) {
+    function massUpdatePools() external {
+        for (uint256 pid = 0; pid < poolInfo.length; ++pid) {
             updatePool(pid);
         }
 
-        address pairAddressHTT3000 = factory.getPair(_hexAddress, _httManager.getOrCreateHEXTimeToken(2999));
-        address pairAddressHTT4000 = factory.getPair(_hexAddress, _httManager.getOrCreateHEXTimeToken(3999));
-        address pairAddressHTT5000 = factory.getPair(_hexAddress, _httManager.getOrCreateHEXTimeToken(4999));
-        address pairAddressHTT6000 = factory.getPair(_hexAddress, _httManager.getOrCreateHEXTimeToken(5999));
-        address pairAddressHTT7000 = factory.getPair(_hexAddress, _httManager.getOrCreateHEXTimeToken(6999));
-        address pairAddressHTT8000 = factory.getPair(_hexAddress, _httManager.getOrCreateHEXTimeToken(7999));
-
         if (_lastMassUpdate == 0) {
+            address pairAddressHTT3000 = factory.getPair(_hexAddress, _httManager.getOrCreateHEXTimeToken(2999));
+            address pairAddressHTT5000 = factory.getPair(_hexAddress, _httManager.getOrCreateHEXTimeToken(4999));
+            address pairAddressHTT7000 = factory.getPair(_hexAddress, _httManager.getOrCreateHEXTimeToken(6999));
+            require(pairAddressHTT3000 != address(0), "A038");
+            require(pairAddressHTT5000 != address(0), "A038");
+            require(pairAddressHTT7000 != address(0), "A038");
+
             _add(1000, IERC20(pairAddressHTT3000));
             _add(2000, IERC20(pairAddressHTT5000));
             _add(5000, IERC20(pairAddressHTT7000));
         } else if (_lastMassUpdate < startTime + YEAR && block.timestamp >= startTime + YEAR) {
+            address pairAddressHTT4000 = factory.getPair(_hexAddress, _httManager.getOrCreateHEXTimeToken(3999));
+            address pairAddressHTT6000 = factory.getPair(_hexAddress, _httManager.getOrCreateHEXTimeToken(5999));
+            require(pairAddressHTT4000 != address(0), "A038");
+            require(pairAddressHTT6000 != address(0), "A038");
             _set(0, 1000);
             _set(1, 3000);
             _set(2, 5000);
@@ -223,6 +213,8 @@ contract MasterChef {
             _add(2000, IERC20(pairAddressHTT4000));
             _add(4000, IERC20(pairAddressHTT6000));
         } else if (_lastMassUpdate < startTime + (YEAR * 2) && block.timestamp >= startTime + (YEAR * 2)) {
+            address pairAddressHTT8000 = factory.getPair(_hexAddress, _httManager.getOrCreateHEXTimeToken(7999));
+            require(pairAddressHTT8000 != address(0), "A038");
             _set(0, 0);
             _set(3, 1000);
             _set(1, 2000);
@@ -256,8 +248,7 @@ contract MasterChef {
     }
 
     // Deposit LP tokens to MasterChef for ACTR allocation.
-    function deposit(uint256 _pid, uint256 _amount) public {
-
+    function deposit(uint256 _pid, uint256 _amount) external {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
 
@@ -268,7 +259,7 @@ contract MasterChef {
         user.amount = user.amount + _amount;
         user.rewardDebt = user.amount * pool.accActrPerShare / 1e12;
 
-        if(pending > 0) {
+        if (pending > 0) {
             safeActrTransfer(msg.sender, pending);
         }
         pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
@@ -277,7 +268,7 @@ contract MasterChef {
     }
 
     // Withdraw LP tokens from MasterChef.
-    function withdraw(uint256 _pid, uint256 _amount) public {  
+    function withdraw(uint256 _pid, uint256 _amount) external {  
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
 
@@ -290,25 +281,12 @@ contract MasterChef {
         user.amount = user.amount - _amount;
         user.rewardDebt = user.amount * pool.accActrPerShare / 1e12;
 
-        if(pending > 0) {
+        if (pending > 0) {
             safeActrTransfer(msg.sender, pending);
         }
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
         
         emit Withdraw(msg.sender, _pid, _amount);
-    }
-
-    // Withdraw without caring about rewards. EMERGENCY ONLY.
-    function emergencyWithdraw(uint256 _pid) public {
-        PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = userInfo[_pid][msg.sender];
-
-        uint256 oldUserAmount = user.amount;
-        user.amount = 0;
-        user.rewardDebt = 0;
-
-        pool.lpToken.safeTransfer(address(msg.sender), oldUserAmount);
-        emit EmergencyWithdraw(msg.sender, _pid, oldUserAmount);
     }
 
     // Safe ACTR transfer function, just in case if rounding error causes pool to not have enough ACTR.

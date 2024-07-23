@@ -55,8 +55,11 @@ export const ERROR_CODES = {
   A035: 'Actuator.feeMineStart: you don\'t arleady have a stake in this maturity. call feeMineStart instead.',
   A036: 'Caller is not allowed',
   A037: 'withdraw: not good',
-  A038: '',
-  A039: '',
+  A038: 'Invalid farm pool address',
+  A039: 'Caller is not allowed',
+  A040: 'Deposit Amount must be greater than 0',
+  A041: 'Withdrawal amount must be greater than 0',
+  A042: 'Caller is not allowed',
 }
 
 export const ACCOUNTS = [

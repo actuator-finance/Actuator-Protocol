@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.20;
+pragma solidity 0.8.26;
 
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 import { HEXTimeToken } from "./HEXTimeToken.sol";
 import { IHEX } from "./interfaces/HEX.sol";
 import { HEXStake } from "./declarations/Types.sol";
@@ -74,6 +74,7 @@ contract HEXTimeTokenManager {
         address hsimAddress,
         address hedronAddress,
         address masterChefOwner,
+        address factoryAddress,
         uint72[] memory initialPayouts,
         uint256 farmStartTime,
         uint256[3] memory _farmSupplySchedule,
@@ -82,7 +83,7 @@ contract HEXTimeTokenManager {
         _hx = IHEX(payable(hexAddress));
         _hsim = IHEXStakeInstanceManager(payable(hsimAddress));
         _hedron = IHedron(hedronAddress);
-        MasterChef masterChef = new MasterChef(hexAddress, masterChefOwner, farmStartTime, _farmSupplySchedule, _teamSupplySchedule);
+        MasterChef masterChef = new MasterChef(hexAddress, masterChefOwner, factoryAddress, farmStartTime, _farmSupplySchedule, _teamSupplySchedule);
         actuatorAddress = address(masterChef.actr());
         masterChefAddress = address(masterChef);
         _hsimAddress = hsimAddress;
@@ -327,7 +328,7 @@ contract HEXTimeTokenManager {
         uint256 hsiIndex,
         uint256 hedronHsiIndex
     ) 
-        public 
+        external 
         returns (uint256)
     {
         address[] storage hsiList = hsiLists[msg.sender];
@@ -806,8 +807,8 @@ contract HEXTimeTokenManager {
 
         uint256 rewards = (end - start) * stakeShares / PAYOUT_RESOLUTION;
 
-        // hex contract has less precision for rewards and results an up to 1 heart per day loss when calculating rewards
-        // thus we assume worst case scenario and subtract the precision loss from the rewards
+        // hex contract has less precision for rewards and results up to 1 heart of precision per day loss when calculating rewards
+        // thus we assume worst case scenario and subtract the maximal possible precision loss from the rewards (i.e. 1 heart per day)
         uint256 precisionLoss = endDay - beginDay;
         return precisionLoss < rewards? rewards - precisionLoss: 0;
     }
@@ -859,7 +860,6 @@ contract HEXTimeTokenManager {
 
         uint256 endDay = lockedDay + stakedDays; 
 
-        // TODO (?) change to realizedReserveDay instead of pre endstake reserveDay
         uint256 reserveDay = _getReserveDay(lockedDay, stakedDays, maturity); 
         uint256 reserves = _calculateRewards(reserveDay, endDay, stakeShares);
         uint256 maxSubsidy = reserves - _calcLatePenalty(lockedDay, stakedDays, unlockedDay, reserves);
@@ -905,7 +905,7 @@ contract HEXTimeTokenManager {
         returns (uint256) 
     {
         uint256 endDay = lockedDay + stakedDays;
-        uint256 factor = BASE_RESERVE_FACTOR; // reserveDays defaults to to 10% of stakedDays
+        uint256 factor = BASE_RESERVE_FACTOR; // reserveDays defaults to 10% of stakedDays
 
         if (maturity > endDay) {
             // scale up reserveDays as potential late penalty increases

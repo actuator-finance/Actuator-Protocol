@@ -8,6 +8,7 @@ async function main() {
     Const.HSIM_ADDRESS, 
     Const.HEDRON_ADDRESS, 
     process.env.OWNER, 
+    Const.AMM_FACTORY_ADDRESS,
     [0n], 
     currentTime,
     Const.FARM_EMISSION_SCHEDULE,

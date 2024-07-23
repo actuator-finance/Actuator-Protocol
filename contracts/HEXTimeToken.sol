@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.26;
 
 import "hardhat/console.sol";
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { SafeERC20 } from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
-import { Ownable } from '@openzeppelin/contracts/access/Ownable.sol';
 import { Actuator } from "./Actuator.sol"; 
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
-contract HEXTimeToken is ERC20, Ownable {
+contract HEXTimeToken is ERC20 {
     uint256 public constant CREATION_FEE_RATE = 75; // 75 basis points tax, i.e., 0.75%
 
     // Info of each user.
@@ -21,6 +21,7 @@ contract HEXTimeToken is ERC20, Ownable {
     uint256 public totalDeposits;
     uint256 public accHttPerShare;
     uint16 public maturity;
+    address public httManager;
 
     // Info of each user that stakes LP tokens.
     mapping (address => UserInfo) public userInfo;
@@ -33,18 +34,28 @@ contract HEXTimeToken is ERC20, Ownable {
         uint16 _maturity,
         address actuatorAddress
     ) 
-        ERC20(concatenate("HEX Time Token - Day ", uintToString(_maturity)), concatenate("HTT-", uintToString(_maturity))) 
-        Ownable(msg.sender)
+        ERC20(string.concat("HEX Time Token ", Strings.toString(_maturity)), string.concat("HTT-", Strings.toString(_maturity))) 
     {      
         actr = Actuator(actuatorAddress);
         maturity = _maturity;
+        httManager = msg.sender;
+    }
+
+    modifier onlyHttManager() {
+        require(msg.sender == httManager, "A036");
+        _;
+    }
+
+    modifier onlyActuator() {
+        require(msg.sender == address(actr), "A039");
+        _;
     }
 
     function decimals() public view virtual override returns (uint8) {
         return 8;
     }
 
-    function mint(address to, uint256 amount) external onlyOwner {
+    function mint(address to, uint256 amount) external onlyHttManager {
         if (totalDeposits == 0) {
             return _mint(to, amount);
         }
@@ -56,13 +67,8 @@ contract HEXTimeToken is ERC20, Ownable {
         return _mint(to, amountAfterTax);
     }
 
-    function burn(address from, uint256 amount) external onlyOwner {
+    function burn(address from, uint256 amount) external onlyHttManager {
         _burn(from, amount);
-    }
-
-    function transferFromWithoutApproval(address _from, address _to, uint256 _amount) external onlyOwner returns (bool) {
-        _transfer(_from, _to, _amount); // This is an internal function in the ERC20 standard that executes the transfer.
-        return true;
     }
 
     function calculateTax(uint256 amount) public pure returns (uint256) {
@@ -70,9 +76,7 @@ contract HEXTimeToken is ERC20, Ownable {
     }
 
     // Deposit LP tokens to MasterChef for ACT allocation.
-    function deposit(address account, uint256 _amount) public returns (uint) {
-        require(msg.sender == address(actr), "A036");
-
+    function deposit(address account, uint256 _amount) external onlyActuator returns (uint256) {
         UserInfo storage user = userInfo[account];
 
         totalDeposits += _amount;
@@ -85,6 +89,7 @@ contract HEXTimeToken is ERC20, Ownable {
 
         if (pending > 0) {
             safeHttTransfer(account, pending);
+            emit CollectFees(account, pending);
         }
         // actr.transferFrom(address(account), address(this), _amount);
 
@@ -93,8 +98,7 @@ contract HEXTimeToken is ERC20, Ownable {
         return user.amount;
     }
 
-    function withdraw(address account, uint256 _amount) public returns (uint256, uint256) {  
-        require(msg.sender == address(actr), "A036");
+    function withdraw(address account, uint256 _amount) external onlyActuator returns (uint256, uint256) {  
         UserInfo storage user = userInfo[account];
 
         require(user.amount >= _amount, "A037");
@@ -108,6 +112,7 @@ contract HEXTimeToken is ERC20, Ownable {
 
         if (pending > 0) {
             safeHttTransfer(account, pending);
+            emit CollectFees(account, pending);
         }
         
         emit Withdraw(account, _amount);
@@ -115,9 +120,8 @@ contract HEXTimeToken is ERC20, Ownable {
         return (user.amount, user.capitalAdded);
     }
 
-    function collectFees(address account) public returns (uint) {  
-        require(msg.sender == address(actr), "Caller is not allowed");
-        UserInfo storage user = userInfo[account];
+    function collectFees() external returns (uint256) {  
+        UserInfo storage user = userInfo[msg.sender];
 
         require(user.amount >= 0, "A026");
 
@@ -126,10 +130,9 @@ contract HEXTimeToken is ERC20, Ownable {
         user.rewardDebt = user.amount * accHttPerShare / 1e12;
 
         if (pending > 0) {
-            safeHttTransfer(account, pending);
+            safeHttTransfer(msg.sender, pending);
+            emit CollectFees(msg.sender, pending);
         }
-        
-        emit CollectFees(account, pending);
 
         return pending;
     }
@@ -142,31 +145,6 @@ contract HEXTimeToken is ERC20, Ownable {
         } else {
             _transfer(address(this), _to, _amount);
         }
-    }
-
-    function concatenate(string memory str1, string memory str2) 
-        internal pure returns (string memory) 
-    {
-        return string(abi.encodePacked(str1, str2));
-    }
-
-    function uintToString(uint _i) internal pure returns (string memory) {
-        uint256 j = _i;
-        uint256 len;
-        while (j != 0) {
-            len++;
-            j /= 10;
-        }
-        bytes memory bstr = new bytes(len);
-        uint256 k = len;
-        while (_i != 0) {
-            k = k-1;
-            uint8 temp = (48 + uint8(_i % 10));
-            bytes1 b1 = bytes1(temp);
-            bstr[k] = b1;
-            _i /= 10;
-        }
-        return string(bstr);
     }
 
 }

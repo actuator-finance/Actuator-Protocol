@@ -3,7 +3,7 @@ import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.20",
+  solidity: "0.8.26",
   networks: {
     hardhat: {
       initialBaseFeePerGas: 0, // https://github.com/NomicFoundation/hardhat/issues/3089#issuecomment-1366428941
@@ -11,7 +11,7 @@ const config: HardhatUserConfig = {
       blockGasLimit: 1000000000,
       forking: {
         url: process.env.ALCHEMY_URL as string,
-        blockNumber: 19870000,
+        blockNumber: 20000000,
       },
     },
     localhost: {

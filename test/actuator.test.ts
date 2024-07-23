@@ -56,7 +56,7 @@ describe("Actuator Protocol", function () {
   }  
 
   async function init() {
-    const [owner1, owner2, owner3] = await ethers.getSigners();
+    const [owner1, owner2, owner3, owner4, owner5, owner6, owner7] = await ethers.getSigners();
     
     const Token = await ethers.getContractFactory("HEXTimeTokenManager");
 
@@ -67,6 +67,7 @@ describe("Actuator Protocol", function () {
       Const.HSIM_ADDRESS, 
       Const.HEDRON_ADDRESS, 
       owner1.address, 
+      Const.AMM_FACTORY_ADDRESS,
       [0n], 
       // await Util.getPayouts(), 
       currentTime,
@@ -85,6 +86,10 @@ describe("Actuator Protocol", function () {
     await exec(hsim.connect(owner1).setApprovalForAll(httManagerAddress, true))
     await exec(hsim.connect(owner2).setApprovalForAll(httManagerAddress, true))
     await exec(hsim.connect(owner3).setApprovalForAll(httManagerAddress, true))
+    await exec(hsim.connect(owner4).setApprovalForAll(httManagerAddress, true))
+    await exec(hsim.connect(owner5).setApprovalForAll(httManagerAddress, true))
+    await exec(hsim.connect(owner6).setApprovalForAll(httManagerAddress, true))
+    await exec(hsim.connect(owner7).setApprovalForAll(httManagerAddress, true))
 
     hex = await ethers.getContractAt("IHEX", Const.HEX_ADDRESS);
     await hre.network.provider.request({
@@ -96,13 +101,21 @@ describe("Actuator Protocol", function () {
     await exec(hex.connect(hexHolderSigner).transfer(owner1.address, 100000000000000n))
     await exec(hex.connect(hexHolderSigner).transfer(owner2.address, 100000000000000n))
     await exec(hex.connect(hexHolderSigner).transfer(owner3.address, 100000000000000n))
+    await exec(hex.connect(hexHolderSigner).transfer(owner4.address, 100000000000000n))
+    await exec(hex.connect(hexHolderSigner).transfer(owner5.address, 100000000000000n))
+    await exec(hex.connect(hexHolderSigner).transfer(owner6.address, 100000000000000n))
+    await exec(hex.connect(hexHolderSigner).transfer(owner7.address, 100000000000000n))
 
     await exec(hex.connect(owner1).approve(httManagerAddress, 100000000000000n))
     await exec(hex.connect(owner2).approve(httManagerAddress, 100000000000000n))
     await exec(hex.connect(owner3).approve(httManagerAddress, 100000000000000n))
+    await exec(hex.connect(owner4).approve(httManagerAddress, 100000000000000n))
+    await exec(hex.connect(owner5).approve(httManagerAddress, 100000000000000n))
+    await exec(hex.connect(owner6).approve(httManagerAddress, 100000000000000n))
+    await exec(hex.connect(owner7).approve(httManagerAddress, 100000000000000n))
     await exec(hex.connect(owner1).approve(Const.HSIM_ADDRESS, 100000000000000n))
 
-    return { owner1, owner2, owner3, hsim, owners: [owner1, owner2, owner3] };
+    return { owner1, owner2, owner3, hsim, owners: [owner1, owner2, owner3, owner4, owner5, owner6, owner7] };
   }
 
   type Props = UnwrapPromise<ReturnType<typeof init>>;
@@ -157,7 +170,7 @@ describe("Actuator Protocol", function () {
     expect(balancePost).to.be.equal(0n);
   })
 
-  it.skip("Late End Stake", async function () {
+  it("Late End Stake", async function () {
     const props = await setup();
     const {hsiAddress1, stakedHearts, endDay, lockedDay, stakeShares, stakedDays} =  await createStakes(props, 100)
     await advanceDays(100)
@@ -231,7 +244,7 @@ describe("Actuator Protocol", function () {
       await httManager.connect(props.owner1).mintHEXTimeTokens(0, amount, endDay + dayDiff);
     });
 
-    it.skip("Late End Stake", async function () {
+    it("Late End Stake", async function () {
       const {hsiAddress1, stakedHearts, endDay, lockedDay, stakeShares, stakedDays} =  await createStakes(props, 100)
       await advanceDays(100)
       const maturityDiff = 100
@@ -300,37 +313,55 @@ describe("Actuator Protocol", function () {
     });
   });
 
-  it.skip("Liquidity Mining", async function () {
+  it("Liquidity Mining", async function () {
     const props = await setup();
-    const stakedDays = 100n
-    const day = await hex.currentDay();
-    const endStake = day + stakedDays + 1n
-    await httManager.connect(props.owners[0]).hexStakeStart(10000000n, stakedDays)
-    await httManager.connect(props.owners[1]).hexStakeStart(10000000n, stakedDays)
-    await httManager.connect(props.owners[2]).hexStakeStart(10000000n, stakedDays)
+    let day = Number(await hex.currentDay())
+    // console.log('day: ', day);
+    const stakedDays0 = 2998 - day 
+    const stakedDays1 = 2998 - day 
+    const stakedDays2 = 3998 - day 
+    const stakedDays3 = 4998 - day 
+    const stakedDays4 = 5998 - day 
+    const stakedDays5 = 6998 - day 
+    await httManager.connect(props.owners[0]).hexStakeStart(10000000n, stakedDays0)
+    await httManager.connect(props.owners[1]).hexStakeStart(10000000n, stakedDays1)
+    await httManager.connect(props.owners[2]).hexStakeStart(10000000n, stakedDays2)
+    await httManager.connect(props.owners[3]).hexStakeStart(10000000n, stakedDays3)
+    await httManager.connect(props.owners[4]).hexStakeStart(10000000n, stakedDays4)
+    await httManager.connect(props.owners[5]).hexStakeStart(10000000n, stakedDays5)
 
-    let shares = await getUpdatedShares(props)
+    await httManager.connect(props.owners[0]).mintHEXTimeTokens(0, 10000000n, day + stakedDays0 + 1)
+    await httManager.connect(props.owners[1]).mintHEXTimeTokens(0, 10000000n, day + stakedDays1 + 1)
+    await httManager.connect(props.owners[2]).mintHEXTimeTokens(0, 10000000n, day + stakedDays2 + 1)
+    await httManager.connect(props.owners[3]).mintHEXTimeTokens(0, 10000000n, day + stakedDays3 + 1)
+    await httManager.connect(props.owners[4]).mintHEXTimeTokens(0, 10000000n, day + stakedDays4 + 1)
+    await httManager.connect(props.owners[5]).mintHEXTimeTokens(0, 10000000n, day + stakedDays5 + 1)
     
-    await httManager.connect(props.owners[0]).mintHEXTimeTokens(0, shares[0].stakedHearts, endStake)
-    await httManager.connect(props.owners[1]).mintHEXTimeTokens(0, shares[1].stakedHearts, endStake)
-    await httManager.connect(props.owners[2]).mintHEXTimeTokens(0, shares[2].stakedHearts / 2n, endStake + 200n)
-    
-    shares = await getUpdatedShares(props)
     // get maturity token info
     const tokens = [
-      await getHTTContract(shares[0].maturity),
-      await getHTTContract(shares[2].maturity),
+      await getHTTContract(BigInt(day + stakedDays0 + 1)),
+      await getHTTContract(BigInt(day + stakedDays1 + 1)),
+      await getHTTContract(BigInt(day + stakedDays2 + 1)),
+      await getHTTContract(BigInt(day + stakedDays3 + 1)),
+      await getHTTContract(BigInt(day + stakedDays4 + 1)),
+      await getHTTContract(BigInt(day + stakedDays5 + 1)),
     ]
 
     // approve token transfers
     await tokens[0].connect(props.owners[0]).approve(Const.ROUTER_ADDRESS, 100000000000000n)
     await hex.connect(props.owners[0]).approve(Const.ROUTER_ADDRESS, 100000000000000n)
-    await tokens[0].connect(props.owners[1]).approve(Const.ROUTER_ADDRESS, 100000000000000n)
+    await tokens[1].connect(props.owners[1]).approve(Const.ROUTER_ADDRESS, 100000000000000n)
     await hex.connect(props.owners[1]).approve(Const.ROUTER_ADDRESS, 100000000000000n)
-    await tokens[1].connect(props.owners[2]).approve(Const.ROUTER_ADDRESS, 100000000000000n)
+    await tokens[2].connect(props.owners[2]).approve(Const.ROUTER_ADDRESS, 100000000000000n)
     await hex.connect(props.owners[2]).approve(Const.ROUTER_ADDRESS, 100000000000000n)
+    await tokens[3].connect(props.owners[3]).approve(Const.ROUTER_ADDRESS, 100000000000000n)
+    await hex.connect(props.owners[3]).approve(Const.ROUTER_ADDRESS, 100000000000000n)
+    await tokens[4].connect(props.owners[4]).approve(Const.ROUTER_ADDRESS, 100000000000000n)
+    await hex.connect(props.owners[4]).approve(Const.ROUTER_ADDRESS, 100000000000000n)
+    await tokens[5].connect(props.owners[5]).approve(Const.ROUTER_ADDRESS, 100000000000000n)
+    await hex.connect(props.owners[5]).approve(Const.ROUTER_ADDRESS, 100000000000000n)
+    
     // add liquidity
-
     const routerContract = new ethers.Contract(Const.ROUTER_ADDRESS, ROUTER_ABI) as any
     await routerContract.connect(props.owners[0]).addLiquidity(
       await tokens[0].getAddress(), 
@@ -342,7 +373,7 @@ describe("Actuator Protocol", function () {
       99999999999n
     )
     await routerContract.connect(props.owners[1]).addLiquidity(
-      await tokens[0].getAddress(), 
+      await tokens[1].getAddress(), 
       Const.HEX_ADDRESS, 
       1000000n, 
       100000n, 
@@ -351,7 +382,7 @@ describe("Actuator Protocol", function () {
       99999999999n
     )
     await routerContract.connect(props.owners[2]).addLiquidity(
-      await tokens[1].getAddress(), 
+      await tokens[2].getAddress(), 
       Const.HEX_ADDRESS, 
       1000000n / 2n, 
       100000n / 2n, 
@@ -359,66 +390,148 @@ describe("Actuator Protocol", function () {
       props.owners[2].address, 
       99999999999n
     )
+    await routerContract.connect(props.owners[3]).addLiquidity(
+      await tokens[3].getAddress(), 
+      Const.HEX_ADDRESS, 
+      1000000n, 
+      100000n, 
+      0n, 0n, 
+      props.owners[3].address, 
+      99999999999n
+    )
+    await routerContract.connect(props.owners[4]).addLiquidity(
+      await tokens[4].getAddress(), 
+      Const.HEX_ADDRESS, 
+      1000000n, 
+      100000n, 
+      0n, 0n, 
+      props.owners[4].address, 
+      99999999999n
+    )
+    await routerContract.connect(props.owners[5]).addLiquidity(
+      await tokens[5].getAddress(), 
+      Const.HEX_ADDRESS, 
+      1000000n / 2n, 
+      100000n / 2n, 
+      0n, 0n, 
+      props.owners[5].address, 
+      99999999999n
+    )
 
-    // add pool
+
     let pairFactory = new ethers.Contract(Const.AMM_FACTORY_ADDRESS, FACTORY_ABI, props.owners[0].provider) as any
     let pairAddress = await pairFactory.connect(props.owners[0]).getPair(await tokens[0].getAddress(), Const.HEX_ADDRESS)
     const lpToken0 = new ethers.Contract(pairAddress, BASE_TOKEN_ABI, props.owners[0].provider) as any;
-    await masterChef.connect(props.owners[0]).add(4000, pairAddress)
+    pairFactory = new ethers.Contract(Const.AMM_FACTORY_ADDRESS, FACTORY_ABI, props.owners[1].provider) as any
+    pairAddress = await pairFactory.connect(props.owners[1]).getPair(await tokens[1].getAddress(), Const.HEX_ADDRESS)
+    const lpToken1 = new ethers.Contract(pairAddress, BASE_TOKEN_ABI, props.owners[1].provider) as any;
+    pairFactory = new ethers.Contract(Const.AMM_FACTORY_ADDRESS, FACTORY_ABI, props.owners[2].provider) as any
+    pairAddress = await pairFactory.connect(props.owners[2]).getPair(await tokens[2].getAddress(), Const.HEX_ADDRESS)
+    const lpToken2 = new ethers.Contract(pairAddress, BASE_TOKEN_ABI, props.owners[2].provider) as any;
+    pairFactory = new ethers.Contract(Const.AMM_FACTORY_ADDRESS, FACTORY_ABI, props.owners[3].provider) as any
+    pairAddress = await pairFactory.connect(props.owners[3]).getPair(await tokens[3].getAddress(), Const.HEX_ADDRESS)
+    const lpToken3 = new ethers.Contract(pairAddress, BASE_TOKEN_ABI, props.owners[3].provider) as any;
+    pairFactory = new ethers.Contract(Const.AMM_FACTORY_ADDRESS, FACTORY_ABI, props.owners[4].provider) as any
+    pairAddress = await pairFactory.connect(props.owners[4]).getPair(await tokens[4].getAddress(), Const.HEX_ADDRESS)
+    const lpToken4 = new ethers.Contract(pairAddress, BASE_TOKEN_ABI, props.owners[4].provider) as any;
+    pairFactory = new ethers.Contract(Const.AMM_FACTORY_ADDRESS, FACTORY_ABI, props.owners[5].provider) as any
+    pairAddress = await pairFactory.connect(props.owners[5]).getPair(await tokens[5].getAddress(), Const.HEX_ADDRESS)
+    const lpToken5 = new ethers.Contract(pairAddress, BASE_TOKEN_ABI, props.owners[5].provider) as any;
 
-    // owner 0 add
+    await advanceDays(10)
+    await masterChef.massUpdatePools()
+
+    // owner 0 deposit
     const liquidity0 = await lpToken0.balanceOf(props.owners[0])
     await lpToken0.connect(props.owners[0]).approve(await masterChef.getAddress(), liquidity0)
     await masterChef.connect(props.owners[0]).deposit(0, liquidity0)
 
-    await advanceDays(200)
-
-    // owner 1 add
-    const liquidity1 = await lpToken0.balanceOf(props.owners[1])
-    await lpToken0.connect(props.owners[1]).approve(await masterChef.getAddress(), liquidity1)
-    await masterChef.connect(props.owners[1]).deposit(0, liquidity1)
-
-    await advanceDays(200)
-
-    // add pool
-    pairFactory = new ethers.Contract(Const.AMM_FACTORY_ADDRESS, FACTORY_ABI, props.owners[2].provider) as any
-    pairAddress = await pairFactory.connect(props.owners[2]).getPair(await tokens[1].getAddress(), Const.HEX_ADDRESS)
-    const lpToken1 = new ethers.Contract(pairAddress, BASE_TOKEN_ABI, props.owners[2].provider) as any;
-    await masterChef.connect(props.owners[0]).add(2000, pairAddress)
-
-    await advanceDays(200)
-
-    // owner 2 add
-    const liquidity2 = await lpToken1.balanceOf(props.owners[2])
-    await lpToken1.connect(props.owners[2]).approve(await masterChef.getAddress(), liquidity2)
-    await masterChef.connect(props.owners[2]).deposit(1, liquidity2)    
-
-    await advanceDays(200)
-
-    // update pool weight
-    await masterChef.connect(props.owners[0]).set(1, 4000)
-
-    // renounce ownership
-    await masterChef.connect(props.owners[0]).renounceOwnership()
-    const tx = masterChef.connect(props.owners[0]).set(1, 4000)
-    await expect(tx).to.be.reverted;
+    // .5 yrs
+    await advanceDays(182.5)
     
-    await advanceDays(200)
+    // owner 1 deposit
+    const liquidity1 = await lpToken1.balanceOf(props.owners[1])
+    await lpToken1.connect(props.owners[1]).approve(await masterChef.getAddress(), liquidity1)
+    await masterChef.connect(props.owners[1]).deposit(0, liquidity1)
+    
+    // owner 3 deposit
+    const liquidity3 = await lpToken3.balanceOf(props.owners[3])
+    await lpToken3.connect(props.owners[3]).approve(await masterChef.getAddress(), liquidity3)
+    await masterChef.connect(props.owners[3]).deposit(1, liquidity3)
+    
+    // 1 yrs
+    await advanceDays(182.5)
+    await masterChef.massUpdatePools()
 
+    // owner 2 deposit
+    const liquidity2 = await lpToken2.balanceOf(props.owners[2])
+    await lpToken2.connect(props.owners[2]).approve(await masterChef.getAddress(), liquidity2)
+    await masterChef.connect(props.owners[2]).deposit(3, liquidity2)
+    
+    
+    // owner 5 deposit
+    const liquidity5 = await lpToken5.balanceOf(props.owners[5])
+    await lpToken5.connect(props.owners[5]).approve(await masterChef.getAddress(), liquidity5)
+    await masterChef.connect(props.owners[5]).deposit(2, liquidity5)
+    
+    // await masterChef.connect(props.owners[0]).add(2000, pairAddress) ============
+    
+    // 1.5 yrs
+    await advanceDays(182.5)
+    
+    // owner 4 deposit
+    const liquidity4 = await lpToken4.balanceOf(props.owners[4])
+    await lpToken4.connect(props.owners[4]).approve(await masterChef.getAddress(), liquidity4)
+    await masterChef.connect(props.owners[4]).deposit(4, liquidity4)
+    
+    // 2 yrs
+    await advanceDays(182.5)
+    await advanceDays(100) // need to ensure final farm token maturity is reachable within 5555 stake
+    
+    day = Number(await hex.currentDay())
+    const stakedDays6 = 7998 - day 
+    await httManager.connect(props.owners[6]).hexStakeStart(10000000n, stakedDays6)
+    
+    await httManager.connect(props.owners[6]).mintHEXTimeTokens(0, 10000000n, day + stakedDays6 + 1)
+    tokens.push(await getHTTContract(BigInt(day + stakedDays6 + 1)))
+    await tokens[6].connect(props.owners[6]).approve(Const.ROUTER_ADDRESS, 100000000000000n)
+    await hex.connect(props.owners[6]).approve(Const.ROUTER_ADDRESS, 100000000000000n)
+    await routerContract.connect(props.owners[6]).addLiquidity(
+      await tokens[6].getAddress(), 
+      Const.HEX_ADDRESS, 
+      1000000n / 2n, 
+      100000n / 2n, 
+      0n, 0n, 
+      props.owners[6].address, 
+      99999999999n
+    )
+    pairFactory = new ethers.Contract(Const.AMM_FACTORY_ADDRESS, FACTORY_ABI, props.owners[6].provider) as any
+    pairAddress = await pairFactory.connect(props.owners[6]).getPair(await tokens[6].getAddress(), Const.HEX_ADDRESS)
+    const lpToken6 = new ethers.Contract(pairAddress, BASE_TOKEN_ABI, props.owners[6].provider) as any;
+    
+    // owner 6 deposit
+    const liquidity6 = await lpToken6.balanceOf(props.owners[6])
+    await lpToken6.connect(props.owners[6]).approve(await masterChef.getAddress(), liquidity6)
+    await masterChef.massUpdatePools()
+    await masterChef.connect(props.owners[6]).deposit(5, liquidity6)
+    
+    // 2.5 yrs
+    await advanceDays(182.5)
+
+    const pendingActr = await masterChef.pendingActr(0, props.owners[0])
     await masterChef.connect(props.owners[0]).withdraw(0, liquidity0)
-
-    await advanceDays(200)
-
+    const balance = await actr.balanceOf(props.owners[0])
+    expect(pendingActr).to.be.equal(balance);
+    
+    // 3 yrs
+    await advanceDays(182.5)
+    
     await masterChef.connect(props.owners[1]).withdraw(0, liquidity1)
-    await masterChef.connect(props.owners[2]).withdraw(1, liquidity2)
-
-    // const pendingActr1 = await masterChef.pendingActr(0, props.owners[1].address)
-    // console.log('pendingActr1: ', pendingActr1);
-    // const balance1 = await actr.balanceOf(props.owners[1].address)
-    // console.log('balance1: ', balance1);
-    // const balance2 = await actr.balanceOf(props.owners[2].address)
-    // console.log('balance2: ', balance2);
-    // const pendingActr = await masterChef.pendingActr(0, props.owners[0].address)
+    await masterChef.connect(props.owners[2]).withdraw(3, liquidity2)
+    await masterChef.connect(props.owners[3]).withdraw(1, liquidity3)
+    await masterChef.connect(props.owners[4]).withdraw(4, liquidity4)
+    await masterChef.connect(props.owners[5]).withdraw(2, liquidity5)
+    await masterChef.connect(props.owners[6]).withdraw(5, liquidity6)
   });
 
   it("Mint Team Allocation", async function () {
@@ -478,8 +591,11 @@ describe("Actuator Protocol", function () {
     await actr.connect(props.owners[0]).transfer(props.owners[1], 10000000000000n)
     await actr.connect(props.owners[0]).transfer(props.owners[2], 50000000000000n)
 
-    await actr.connect(props.owners[0]).deposit(maturity1, 1000n);
-  
+    await actr.connect(props.owners[0]).deposit(maturity1, 800n);
+    tx = actr.connect(props.owners[0]).deposit(maturity1, 200n);
+    await expect(tx).to.be.revertedWith('A034');
+    await actr.connect(props.owners[0]).increaseDeposit(0, 200n);
+
     const depositMultiple = 5n
     const deposit1 = 10000000000000n
     const deposit2 = deposit1 * depositMultiple
@@ -493,15 +609,15 @@ describe("Actuator Protocol", function () {
     await actr.connect(props.owners[0]).deposit(maturity0, 1000n);
     await actr.connect(props.owners[0]).withdraw(0, 1000n);
 
-    await actr.connect(props.owners[1]).collectFees(0);
+    const htt0 = await getHTTContract(BigInt(maturity0))
+    await htt0.connect(props.owners[1]).collectFees();
 
     await advanceDays(20)
     await actr.connect(props.owners[1]).withdraw(0, deposit1);
     await advanceDays(70)
     await actr.connect(props.owners[2]).withdraw(0, deposit2);
-    const htt = await getHTTContract(BigInt(maturity0))
-    const balance1 = await htt.balanceOf(props.owners[1].address)
-    const balance2 = await htt.balanceOf(props.owners[2].address)
+    const balance1 = await htt0.balanceOf(props.owners[1].address)
+    const balance2 = await htt0.balanceOf(props.owners[2].address)
 
     // ensure proportional rewards from fees
     expect(balance1 * depositMultiple).to.be.equal(balance2);
@@ -566,6 +682,7 @@ describe("Actuator Protocol", function () {
     await httManager.dailyDataRange(800, 1500);
     await httManager.hsiListRange(maturity, 0, 1);
     await httManager.hsiDataListRange(maturity, 0, 1);
+    await httManager.stakeLists(props.owner1, 0);
   });
 
   const getUpdatedShares = async (props: Awaited<ReturnType<typeof setup>>) => {
