@@ -109,7 +109,6 @@ contract HEXTimeToken is ERC20 {
             safeHttTransfer(account, pending);
             emit CollectFees(account, pending);
         }
-        // actr.transferFrom(address(account), address(this), _amount);
 
         emit Deposit(account, _amount);
 
@@ -169,7 +168,7 @@ contract HEXTimeToken is ERC20 {
      * @param _to Recipient address.
      * @param _amount Amount of HTT tokens to transfer.
     */
-    function safeHttTransfer(address _to, uint256 _amount) internal {
+    function safeHttTransfer(address _to, uint256 _amount) private {
         uint256 httBal = balanceOf(address(this));
         if (_amount > httBal) {
             _transfer(address(this), _to, httBal);

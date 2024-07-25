@@ -364,7 +364,7 @@ contract MasterChef {
      * @param _to Recipient address.
      * @param _amount Amount of ACTR tokens to transfer.
     */
-    function safeActrTransfer(address _to, uint256 _amount) internal {
+    function safeActrTransfer(address _to, uint256 _amount) private {
         uint256 actrBal = actr.balanceOf(address(this));
         if (_amount > actrBal) {
             actr.transfer(_to, actrBal);
