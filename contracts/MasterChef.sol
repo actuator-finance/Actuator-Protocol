@@ -8,8 +8,7 @@ import { Actuator } from "./Actuator.sol";
 import { HEXTimeTokenManager } from "./HEXTimeTokenManager.sol"; 
 import { IPulseXFactory } from "./interfaces/PulseXFactory.sol"; 
 
-// MasterChef by SushiSwap
-// The biggest change made is the immutable supply curve
+// Much of the code in this contract has been copied or adapted from SushiSwap's MasterChef contract.
 
 contract MasterChef {
     using SafeERC20 for IERC20;

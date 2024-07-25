@@ -12,8 +12,8 @@ contract HEXTimeToken is ERC20 {
 
     // Info of each user.
     struct UserInfo {
-        uint256 amount;     // How many LP tokens the user has provided.
-        uint256 rewardDebt; // Reward debt. See explanation below.
+        uint256 amount;     // How many ACTR tokens the user has deposited.
+        uint256 rewardDebt; 
         uint256 capitalAdded; // deposit start time
     }
 
@@ -23,7 +23,7 @@ contract HEXTimeToken is ERC20 {
     uint16 public maturity;
     address public httManager;
 
-    // Info of each user that stakes LP tokens.
+    // Info of each user that deposits ACTR.
     mapping (address => UserInfo) public userInfo;
 
     event Deposit(address indexed user, uint256 amount);
@@ -90,8 +90,8 @@ contract HEXTimeToken is ERC20 {
     }
 
     /**
-     * @dev Deposit and stake ACTR to collect HEX Time Token (HTT) tax.
-     * @param account Address of the staker.
+     * @dev Deposit ACTR to collect HEX Time Token (HTT) tax.
+     * @param account Address of the depositer.
      * @param _amount Amount of ACTR to deposit.
     */
     function deposit(address account, uint256 _amount) external onlyActuator returns (uint256) {
@@ -116,8 +116,8 @@ contract HEXTimeToken is ERC20 {
     }
 
     /**
-     * @dev Withdraw ACTR from stake.
-     * @param account Address of the staker.
+     * @dev Withdraw ACTR from vault.
+     * @param account Address of the depositer.
      * @param _amount Amount of ACTR to withdraw.
     */
     function withdraw(address account, uint256 _amount) external onlyActuator returns (uint256, uint256) {  

@@ -12,7 +12,7 @@ contract Actuator is ERC20 {
     uint256 public totalDividendPoints;
     uint256 pointMultiplier = 10e18;
 
-    uint256 private constant MIN_STAKE_TIME = 90 days;
+    uint256 private constant MIN_VAULT_TIME = 90 days;
 
     HEXTimeTokenManager public _httm;
     address public masterChef;
@@ -51,7 +51,7 @@ contract Actuator is ERC20 {
     }
 
     /**
-     * @dev Deposit and stake ACTR to collect the given HEX Time Token (HTT) tax.
+     * @dev Deposit ACTR into vault to collect the given HEX Time Token (HTT) tax.
      * @param maturity HTT maturity day to stake against.
      * @param amount Amount of ACTR to deposit.
     */
@@ -61,8 +61,8 @@ contract Actuator is ERC20 {
         (, address tokenAddress) = _httm.maturityToInfo(maturity);
         require(tokenAddress != address(0), "A033");
         
-        uint16[] storage miners = depositedMaturities[msg.sender];
-        miners.push(maturity);
+        uint16[] storage maturities = depositedMaturities[msg.sender];
+        maturities.push(maturity);
 
         uint256 newAmount = HEXTimeToken(tokenAddress).deposit(msg.sender, amount);
         require(newAmount == amount, "A034");
@@ -72,7 +72,7 @@ contract Actuator is ERC20 {
     }
 
     /**
-     * @dev Increase Deposit and staked ACTR.
+     * @dev Increase deposited ACTR.
      * @param index Index of the user's vaults.
      * @param amount Amount of ACTR to deposit.
     */
@@ -100,13 +100,13 @@ contract Actuator is ERC20 {
         (uint256 newAmount, uint256 capitalAdded) = HEXTimeToken(tokenAddress).withdraw(msg.sender, amount);
 
         if (newAmount == 0) {
-            _pruneFeeMiners(msg.sender, index);
+            _pruneDepositedMaturities(msg.sender, index);
         }
 
         uint256 servedTime = block.timestamp - capitalAdded;        
-        if (servedTime < MIN_STAKE_TIME) {
+        if (servedTime < MIN_VAULT_TIME) {
             // Penalty for early withdrawal
-            uint256 remainder = amount * servedTime / MIN_STAKE_TIME;
+            uint256 remainder = amount * servedTime / MIN_VAULT_TIME;
             _burn(address(this), amount - remainder);
             _transfer(address(this), msg.sender, remainder);
         } else {
@@ -119,7 +119,7 @@ contract Actuator is ERC20 {
      * @param account The relevant user.
      * @param index The index of the vault to remove.
      */
-    function _pruneFeeMiners(
+    function _pruneDepositedMaturities(
         address account,
         uint256 index
     )
