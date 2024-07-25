@@ -67,6 +67,7 @@ contract MasterChef {
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
+    event CollectEmissions(address indexed user, uint256 amount);
 
     constructor(
         address hexAddress,
@@ -326,6 +327,7 @@ contract MasterChef {
 
         if (pending > 0) {
             safeActrTransfer(msg.sender, pending);
+            emit CollectEmissions(msg.sender, pending);
         }
         pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
 
@@ -352,6 +354,7 @@ contract MasterChef {
 
         if (pending > 0) {
             safeActrTransfer(msg.sender, pending);
+            emit CollectEmissions(msg.sender, pending);
         }
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
         
