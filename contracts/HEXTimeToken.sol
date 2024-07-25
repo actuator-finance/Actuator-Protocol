@@ -8,7 +8,7 @@ import { Actuator } from "./Actuator.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract HEXTimeToken is ERC20 {
-    uint256 public constant CREATION_FEE_RATE = 75; // 75 basis points tax, i.e., 0.75%
+    uint256 public constant CREATION_FEE_RATE = 100; // 100 basis points tax, i.e., 1%
 
     // Info of each user.
     struct UserInfo {
