@@ -55,27 +55,45 @@ contract HEXTimeToken is ERC20 {
         return 8;
     }
 
+    /**
+     * @dev Priveleged function for the HTT Manager to mint HEX Time Tokens (HTT) and collect a fee/tax.
+     * @param to Recipient address.
+     * @param amount Amount of HTTs to transfer.
+    */
     function mint(address to, uint256 amount) external onlyHttManager {
         if (totalDeposits == 0) {
-            return _mint(to, amount);
+            _mint(to, amount);
         }
 
         uint256 taxAmount = calculateTax(amount);
         uint256 amountAfterTax = amount - taxAmount;
         accHttPerShare = accHttPerShare + (taxAmount * 1e12 / totalDeposits);
         _mint(address(this), taxAmount);
-        return _mint(to, amountAfterTax);
+        _mint(to, amountAfterTax);
     }
 
+    /**
+     * @dev Priveleged function for the HTT Manager to burn HEX Time Tokens (HTT).
+     * @param from Address to burn from.
+     * @param amount Amount of HTTs to burn.
+    */
     function burn(address from, uint256 amount) external onlyHttManager {
         _burn(from, amount);
     }
 
+    /**
+     * @dev Calculates the tax for a given input amount.
+     * @param amount Amount of HTTs to apply tax.
+    */
     function calculateTax(uint256 amount) public pure returns (uint256) {
         return amount * CREATION_FEE_RATE / 10000; // Assumes CREATION_FEE_RATE is in basis points
     }
 
-    // Deposit LP tokens to MasterChef for ACT allocation.
+    /**
+     * @dev Deposit and stake ACTR to collect HEX Time Token (HTT) tax.
+     * @param account Address of the staker.
+     * @param _amount Amount of ACTR to deposit.
+    */
     function deposit(address account, uint256 _amount) external onlyActuator returns (uint256) {
         UserInfo storage user = userInfo[account];
 
@@ -98,6 +116,11 @@ contract HEXTimeToken is ERC20 {
         return user.amount;
     }
 
+    /**
+     * @dev Withdraw ACTR from stake.
+     * @param account Address of the staker.
+     * @param _amount Amount of ACTR to withdraw.
+    */
     function withdraw(address account, uint256 _amount) external onlyActuator returns (uint256, uint256) {  
         UserInfo storage user = userInfo[account];
 
@@ -120,6 +143,10 @@ contract HEXTimeToken is ERC20 {
         return (user.amount, user.capitalAdded);
     }
 
+    /**
+     * @dev Collect accumulated HTT rewards from tax.
+     * @return Amount of HTTs collected.
+    */
     function collectFees() external returns (uint256) {  
         UserInfo storage user = userInfo[msg.sender];
 
@@ -137,7 +164,11 @@ contract HEXTimeToken is ERC20 {
         return pending;
     }
 
-    // Safe HTT transfer function, just in case if rounding error causes pool to not have enough ACTR.
+    /**
+     * @dev Safe HTT transfer function, just in case if rounding error causes pool to not have enough HTT.
+     * @param _to Recipient address.
+     * @param _amount Amount of HTT tokens to transfer.
+    */
     function safeHttTransfer(address _to, uint256 _amount) internal {
         uint256 httBal = balanceOf(address(this));
         if (_amount > httBal) {

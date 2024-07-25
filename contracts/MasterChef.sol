@@ -9,7 +9,7 @@ import { HEXTimeTokenManager } from "./HEXTimeTokenManager.sol";
 import { IPulseXFactory } from "./interfaces/PulseXFactory.sol"; 
 
 // MasterChef by SushiSwap
-// The biggest change made is the immutable supply curve with a terminal supply of 1,000,000,000 ACTR
+// The biggest change made is the immutable supply curve
 
 contract MasterChef {
     using SafeERC20 for IERC20;
@@ -88,11 +88,19 @@ contract MasterChef {
         factory = IPulseXFactory(_factoryAddress);
     }
 
+    /**
+     * @dev Retreives the number of farm pools.
+     * @return Number of pools.
+     */
     function poolLength() external view returns (uint256) {
         return poolInfo.length;
     }
 
-    // Add a new lp to the pool. 
+    /**
+     * @dev Add a new lp to the pool. 
+     * @param _allocPoint The allocation points to assign to the pool.
+     * @param _lpToken LP Address of the pool to add.
+    */
     function _add(uint256 _allocPoint, IERC20 _lpToken) private {
         require(_allocPoint <= MaxAllocPoint, "A029");
 
@@ -106,7 +114,11 @@ contract MasterChef {
         }));
     }
 
-    // Update the given pool's ACTR allocation point. 
+    /**
+     * @dev Update the given pool's ACTR allocation point. 
+     * @param _pid Internal ID of the pool to update.
+     * @param _allocPoint Updated allocation points to assign to the pool.
+    */
     function _set(uint256 _pid, uint256 _allocPoint) private {
         if (poolInfo[_pid].allocPoint > _allocPoint) {
             require(totalAllocPoint - (poolInfo[_pid].allocPoint - _allocPoint) > 0, "A032");
@@ -117,24 +129,59 @@ contract MasterChef {
         poolInfo[_pid].allocPoint = _allocPoint;
     }
 
+    /**
+     * @dev Public function to fetch the farm ACTR emission amount within 2 timestamp. 
+     * @param _from Start date to calculate emissions from.
+     * @param _to End date to calculate emissions to.
+     * @return Total ACTR Emissions.
+    */
     function getFarmEmissions(uint256 _from, uint256 _to) external view returns (uint256) {
         return _getFarmEmissions(_from, _to);
     }
 
+    /**
+     * @dev Private function to fetch the farm ACTR emission amount within 2 timestamps. 
+     * @param _from Start date to calculate emissions from.
+     * @param _to End date to calculate emissions to.
+     * @return Total ACTR Emissions.
+    */
     function _getFarmEmissions(uint256 _from, uint256 _to) private view returns (uint256) {
         return _getEmissions(_from, _to, farmEmissionSchedule);
     }
 
+    /**
+     * @dev Public function to fetch the team ACTR emission amount within 2 timestamp. 
+     * @param _from Start date to calculate emissions from.
+     * @param _to End date to calculate emissions to.
+     * @return Total ACTR Emissions.
+    */
     function getTeamEmissions(uint256 _from, uint256 _to) public view returns (uint256) {
         return _getEmissions(_from, _to, teamEmissionSchedule);
     }
 
+    /**
+     * @dev Generic function to fetch the ACTR emission amount within 2 dates based on the provided emission schedule.
+     * @param _from Start date to calculate emissions from.
+     * @param _to End date to calculate emissions to.
+     * @param emissionSchedule Array of yearly ACTR emission amount.
+     * @return Total ACTR Emissions.
+     * 
+    */
     function _getEmissions(uint256 _from, uint256 _to, uint256[3] memory emissionSchedule) private view returns (uint256) {
         uint256 start = _from - startTime;
         uint256 end = _to - startTime;
         return _getEmissionsInTimeframe(start, end, emissionSchedule);
     }
 
+    /**
+     * @dev Generic function to fetch the ACTR emission amount within 2 timestamps based on the provided emission schedule 
+     * and assuming epoch is farm start.
+     * @param start Start time to calculate emissions from.
+     * @param end End time to calculate emissions to.
+     * @param emissionSchedule Array of yearly ACTR emission amount.
+     * @return Total ACTR Emissions.
+     * 
+    */
     function _getEmissionsInTimeframe(uint256 start, uint256 end, uint256[3] memory emissionSchedule) private pure returns (uint256) {
         uint256 mintAmount = 0;
         for (uint256 year = 0; year < emissionSchedule.length; year++) {
@@ -153,6 +200,11 @@ contract MasterChef {
         return mintAmount;
     }
 
+    /**
+     * @dev Priveleged function to mint the accrued team allocation since previous mint.
+     * @return ACTR amount minted.
+     * 
+    */
     function mintTeamAllocation() external returns (uint256) {
         require(msg.sender == _teamAddress, "A025");
         
@@ -170,7 +222,11 @@ contract MasterChef {
         return mintAmount;
     }
 
-    // View function to see pending ACTR on frontend.
+    /**
+     * @dev View function to see pending ACTR on frontend.
+     * @return Pending ACTR amount.
+     * 
+    */
     function pendingActr(uint256 _pid, address _user) external view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
@@ -184,7 +240,10 @@ contract MasterChef {
         return (user.amount * accActrPerShare / 1e12) - user.rewardDebt;
     }
 
-    // Update reward variables for all pools. 
+    /**
+     * @dev Update all pools to the latest predefined allocation points. 
+     * 
+    */
     function massUpdatePools() external {
         for (uint256 pid = 0; pid < poolInfo.length; ++pid) {
             updatePool(pid);
@@ -227,7 +286,10 @@ contract MasterChef {
         _lastMassUpdate = block.timestamp;
     }
 
-    // Update reward variables of the given pool to be up-to-date.
+    /**
+     * @dev Update reward variables of the given pool to be up-to-date.
+     * @param _pid Internal ID of the pool.
+    */
     function updatePool(uint256 _pid) public {
         PoolInfo storage pool = poolInfo[_pid];
         if (block.timestamp <= pool.lastRewardTime) {
@@ -247,7 +309,11 @@ contract MasterChef {
         pool.lastRewardTime = block.timestamp;
     }
 
-    // Deposit LP tokens to MasterChef for ACTR allocation.
+    /**
+     * @dev Deposit LP tokens to MasterChef for ACTR allocation.
+     * @param _pid ID of the pool.
+     * @param _amount Amount of LP tokens to deposit.
+    */
     function deposit(uint256 _pid, uint256 _amount) external {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
@@ -267,7 +333,11 @@ contract MasterChef {
         emit Deposit(msg.sender, _pid, _amount);
     }
 
-    // Withdraw LP tokens from MasterChef.
+    /**
+     * @dev Withdraw LP tokens from MasterChef.
+     * @param _pid ID of the pool.
+     * @param _amount Amount of LP tokens to withdraw.
+    */
     function withdraw(uint256 _pid, uint256 _amount) external {  
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
@@ -289,7 +359,11 @@ contract MasterChef {
         emit Withdraw(msg.sender, _pid, _amount);
     }
 
-    // Safe ACTR transfer function, just in case if rounding error causes pool to not have enough ACTR.
+    /**
+     * @dev Safe ACTR transfer function, just in case if rounding error causes pool to not have enough ACTR.
+     * @param _to Recipient address.
+     * @param _amount Amount of ACTR tokens to transfer.
+    */
     function safeActrTransfer(address _to, uint256 _amount) internal {
         uint256 actrBal = actr.balanceOf(address(this));
         if (_amount > actrBal) {
@@ -300,7 +374,7 @@ contract MasterChef {
     }
 
     /**
-     * @dev Transfers team address of the contract to a new account.
+     * @dev Transfers team address to a new account.
      */
     function transferTeamAddress(address newTeamAddress) external {
         require(msg.sender == _teamAddress, "A025");

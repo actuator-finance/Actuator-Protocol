@@ -36,6 +36,10 @@ contract Actuator is ERC20 {
         _mint(to, amount);
     }
 
+    /**
+     * @dev Retreives the number of vaults the user has deposited into.
+     * @return Number of vaults.
+     */
     function vaultCount(
         address user
     )
@@ -46,6 +50,11 @@ contract Actuator is ERC20 {
         return depositedMaturities[user].length;
     }
 
+    /**
+     * @dev Deposit and stake ACTR to collect the given HEX Time Token (HTT) tax.
+     * @param maturity HTT maturity day to stake against.
+     * @param amount Amount of ACTR to deposit.
+    */
     function deposit(uint16 maturity, uint256 amount) external {
         require(amount > 0, "A040");
         
@@ -62,6 +71,11 @@ contract Actuator is ERC20 {
         _transfer(msg.sender, address(this), amount);
     }
 
+    /**
+     * @dev Increase Deposit and staked ACTR.
+     * @param index Index of the user's vaults.
+     * @param amount Amount of ACTR to deposit.
+    */
     function increaseDeposit(uint256 index, uint256 amount) external {
         require(amount > 0, "A040");
         uint16 maturity = depositedMaturities[msg.sender][index];
@@ -74,6 +88,11 @@ contract Actuator is ERC20 {
         _transfer(msg.sender, address(this), amount);
     }
 
+    /**
+     * @dev Withdraw ACTR from vault.
+     * @param index Index of the user's vaults.
+     * @param amount Amount of ACTR to withdraw.
+    */
     function withdraw(uint256 index, uint256 amount) external {
         require(amount > 0, "A041");
         uint16 maturity = depositedMaturities[msg.sender][index];
@@ -96,9 +115,9 @@ contract Actuator is ERC20 {
     }
 
     /**
-     * @dev Removes a HEX stake instance (HSI) contract address from an address mapping.
-     * @param account A mapped list of HSI contract addresses.
-     * @param index The index of the matuirty which will be removed.
+     * @dev Removes a vault from the user's individual vault list.
+     * @param account The relevant user.
+     * @param index The index of the vault to remove.
      */
     function _pruneFeeMiners(
         address account,
