@@ -34,7 +34,7 @@ const config: HardhatUserConfig = {
     bail: true
   },
   gasReporter: {
-    enabled: true,
+    enabled: false,
   }
 };
 

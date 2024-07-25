@@ -63,6 +63,7 @@ contract HEXTimeToken is ERC20 {
     function mint(address to, uint256 amount) external onlyHttManager {
         if (totalDeposits == 0) {
             _mint(to, amount);
+            return;
         }
 
         uint256 taxAmount = calculateTax(amount);
