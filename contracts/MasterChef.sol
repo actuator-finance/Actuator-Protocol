@@ -362,6 +362,30 @@ contract MasterChef {
     }
 
     /**
+     * @dev Collect accumulated ACTR emissions.
+     * @param _pid ID of the pool.
+    */
+    function collectEmissions(uint256 _pid) external returns (uint256) {  
+        PoolInfo storage pool = poolInfo[_pid];
+        UserInfo storage user = userInfo[_pid][msg.sender];
+
+        require(user.amount > 0, "A044");
+        
+        updatePool(_pid);
+
+        uint256 pending = (user.amount * pool.accActrPerShare / 1e12) - user.rewardDebt;
+
+        user.rewardDebt = user.amount * pool.accActrPerShare / 1e12;
+
+        if (pending > 0) {
+            safeActrTransfer(msg.sender, pending);
+            emit CollectEmissions(msg.sender, pending);
+        }
+
+        return pending;
+    }
+
+    /**
      * @dev Safe ACTR transfer function, just in case if rounding error causes pool to not have enough ACTR.
      * @param _to Recipient address.
      * @param _amount Amount of ACTR tokens to transfer.

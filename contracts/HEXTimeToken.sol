@@ -150,7 +150,7 @@ contract HEXTimeToken is ERC20 {
     function collectFees() external returns (uint256) {  
         UserInfo storage user = userInfo[msg.sender];
 
-        require(user.amount >= 0, "A026");
+        require(user.amount > 0, "A026");
 
         uint256 pending = (user.amount * accHttPerShare / 1e12) - user.rewardDebt;
         

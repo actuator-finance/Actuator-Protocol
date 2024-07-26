@@ -20,7 +20,7 @@ const config: HardhatUserConfig = {
     },
     pulsechain_testnet: {
       url: 'https://rpc.v4.testnet.pulsechain.com',
-      accounts: [process.env.DEV_DEPLOYMENT_PRIVATE_KEY as string]
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY as string]
     },
     dev_remote: {
       url: `http://${process.env.DEV_REMOTE_URL}`,

@@ -7,7 +7,7 @@ async function main() {
     Const.HEX_ADDRESS, 
     Const.HSIM_ADDRESS, 
     Const.HEDRON_ADDRESS, 
-    process.env.OWNER, 
+    process.env.TEAM_ADDRESS, 
     Const.AMM_FACTORY_ADDRESS,
     [0n], 
     currentTime,

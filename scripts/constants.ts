@@ -60,6 +60,8 @@ export const ERROR_CODES = {
   A040: 'Deposit Amount must be greater than 0',
   A041: 'Withdrawal amount must be greater than 0',
   A042: 'Caller is not allowed',
+  A043: 'Deposit amount must be greater than 0',
+  A044: 'Farm Deposits must be greater than 0 to collect ACTR emissions',
 }
 
 export const ACCOUNTS = [
