@@ -18,6 +18,7 @@ contract MasterChef {
     address public immutable _hexAddress;
     uint256[3] public farmEmissionSchedule;
     uint256[3] public teamEmissionSchedule;
+    uint256[14] public poolPointSchedule;
 
     address private _teamAddress;
     uint256 private _lastTeamMint;
@@ -54,7 +55,7 @@ contract MasterChef {
     
     HEXTimeTokenManager public _httManager;
 
-    uint256 public constant MaxAllocPoint = 5000;
+    uint256 public constant MaxAllocPoint = 4000;
 
     // Info of each pool.
     PoolInfo[] public poolInfo;
@@ -75,7 +76,8 @@ contract MasterChef {
         address _factoryAddress,
         uint256 _startTime,
         uint256[3] memory _farmEmissionSchedule,
-        uint256[3] memory _teamEmissionSchedule
+        uint256[3] memory _teamEmissionSchedule,
+        uint256[14] memory _poolPointSchedule
     ) {
         _httManager = HEXTimeTokenManager(msg.sender);
         actr = new Actuator(msg.sender);
@@ -83,6 +85,7 @@ contract MasterChef {
         _lastTeamMint = _startTime;
         farmEmissionSchedule = _farmEmissionSchedule;
         teamEmissionSchedule = _teamEmissionSchedule;
+        poolPointSchedule = _poolPointSchedule;
         _teamAddress = teamAddress;
         _hexAddress = hexAddress;
         factory = IPulseXFactory(_factoryAddress);
@@ -257,30 +260,29 @@ contract MasterChef {
             require(pairAddressHTT5000 != address(0), "A038");
             require(pairAddressHTT7000 != address(0), "A038");
 
-            _add(1000, IERC20(pairAddressHTT3000));
-            _add(2000, IERC20(pairAddressHTT5000));
-            _add(5000, IERC20(pairAddressHTT7000));
+            _add(poolPointSchedule[0], IERC20(pairAddressHTT3000));
+            _add(poolPointSchedule[1], IERC20(pairAddressHTT5000));
+            _add(poolPointSchedule[2], IERC20(pairAddressHTT7000));
         } else if (_lastMassUpdate < startTime + YEAR && block.timestamp >= startTime + YEAR) {
             address pairAddressHTT4000 = factory.getPair(_hexAddress, _httManager.getOrCreateHEXTimeToken(3999));
             address pairAddressHTT6000 = factory.getPair(_hexAddress, _httManager.getOrCreateHEXTimeToken(5999));
             require(pairAddressHTT4000 != address(0), "A038");
             require(pairAddressHTT6000 != address(0), "A038");
-            _set(0, 1000);
-            _set(1, 3000);
-            _set(2, 5000);
-
-            _add(2000, IERC20(pairAddressHTT4000));
-            _add(4000, IERC20(pairAddressHTT6000));
+            _set(0, poolPointSchedule[3]);
+            _add(poolPointSchedule[4], IERC20(pairAddressHTT4000));
+            _set(1, poolPointSchedule[5]);
+            _add(poolPointSchedule[6], IERC20(pairAddressHTT6000));
+            _set(2, poolPointSchedule[7]);
         } else if (_lastMassUpdate < startTime + (YEAR * 2) && block.timestamp >= startTime + (YEAR * 2)) {
             address pairAddressHTT8000 = factory.getPair(_hexAddress, _httManager.getOrCreateHEXTimeToken(7999));
             require(pairAddressHTT8000 != address(0), "A038");
-            _set(0, 0);
-            _set(3, 1000);
-            _set(1, 2000);
-            _set(4, 3000);
-            _set(2, 4000);
+            _set(0, poolPointSchedule[8]);
+            _set(3, poolPointSchedule[9]);
+            _set(1, poolPointSchedule[10]);
+            _set(4, poolPointSchedule[11]);
+            _set(2, poolPointSchedule[12]);
             
-            _add(5000, IERC20(pairAddressHTT8000));
+            _add(poolPointSchedule[13], IERC20(pairAddressHTT8000));
         }
 
         _lastMassUpdate = block.timestamp;
@@ -359,30 +361,6 @@ contract MasterChef {
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
         
         emit Withdraw(msg.sender, _pid, _amount);
-    }
-
-    /**
-     * @dev Collect accumulated ACTR emissions.
-     * @param _pid ID of the pool.
-    */
-    function collectEmissions(uint256 _pid) external returns (uint256) {  
-        PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = userInfo[_pid][msg.sender];
-
-        require(user.amount > 0, "A044");
-        
-        updatePool(_pid);
-
-        uint256 pending = (user.amount * pool.accActrPerShare / 1e12) - user.rewardDebt;
-
-        user.rewardDebt = user.amount * pool.accActrPerShare / 1e12;
-
-        if (pending > 0) {
-            safeActrTransfer(msg.sender, pending);
-            emit CollectEmissions(msg.sender, pending);
-        }
-
-        return pending;
     }
 
     /**

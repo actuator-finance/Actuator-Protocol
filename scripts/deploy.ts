@@ -13,6 +13,7 @@ async function main() {
     currentTime,
     Const.FARM_EMISSION_SCHEDULE,
     Const.TEAM_EMISSION_SCHEDULE,
+    Const.POOL_POINT_SCHEDULE,
   ]);
 
   await lock.waitForDeployment();

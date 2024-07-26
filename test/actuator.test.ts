@@ -73,6 +73,7 @@ describe("Actuator Protocol", function () {
       currentTime,
       Const.FARM_EMISSION_SCHEDULE,
       Const.TEAM_EMISSION_SCHEDULE,  
+      Const.POOL_POINT_SCHEDULE,
     );
     httManagerAddress = await httManager.getAddress()
 
@@ -519,7 +520,7 @@ describe("Actuator Protocol", function () {
     await advanceDays(182.5)
 
     const pendingActr = await masterChef.pendingActr(0, props.owners[0])
-    await masterChef.connect(props.owners[0]).collectEmissions(0)
+    await masterChef.connect(props.owners[0]).withdraw(0, 0) // collect emissions
     await masterChef.connect(props.owners[0]).withdraw(0, liquidity0)
     const balance = await actr.balanceOf(props.owners[0])
     expect(pendingActr).to.be.equal(balance);

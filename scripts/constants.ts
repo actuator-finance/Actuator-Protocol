@@ -15,6 +15,26 @@ export const PAYOUT_START_DAY = 800;
 const scaler = 1000000000000000000n
 export const FARM_EMISSION_SCHEDULE: [bigint, bigint, bigint] = [350000000n * scaler, 250000000n * scaler, 150000000n * scaler]
 export const TEAM_EMISSION_SCHEDULE: [bigint, bigint, bigint] = [116000000n * scaler, 83000000n * scaler, 51000000n * scaler]
+export const POOL_POINT_SCHEDULE = [
+  // year 1
+  1000,
+  1750,
+  2500,
+  // year 2
+  1000,
+  1500,
+  2000,
+  2500,
+  3000,
+  // year 3
+  0,
+  1000,
+  1500,
+  2000,
+  2500,
+  3000,
+]
+
 
 export const ERROR_CODES = {
   A000: 'Cannot revoke a collateralized stake',
