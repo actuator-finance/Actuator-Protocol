@@ -34,6 +34,12 @@ export const getPayouts = async () => {
   return payouts
 }
 
+export const getPayoutsTemp = async () => {
+  const payoutsRaw: string[] = JSON.parse(await fs.readFileSync('./scripts/payouts_temp.json', 'utf8'))
+  const payouts = payoutsRaw.map(p => BigInt(p))
+  return payouts
+}
+
 export function getRandomNumber(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }

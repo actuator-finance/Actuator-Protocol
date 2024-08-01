@@ -4,7 +4,15 @@ import "@nomicfoundation/hardhat-toolbox";
 import "hardhat-gas-reporter"
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.26",
+  solidity:{
+    version: "0.8.26",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200
+      }
+    }
+  },
   networks: {
     hardhat: {
       initialBaseFeePerGas: 0, // https://github.com/NomicFoundation/hardhat/issues/3089#issuecomment-1366428941
@@ -20,7 +28,7 @@ const config: HardhatUserConfig = {
     },
     pulsechain_testnet: {
       url: 'https://rpc.v4.testnet.pulsechain.com',
-      accounts: [process.env.DEPLOYER_PRIVATE_KEY as string]
+      accounts: [process.env.TEST_DEPLOYER_PRIVATE_KEY as string]
     },
     dev_remote: {
       url: `http://${process.env.DEV_REMOTE_URL}`,

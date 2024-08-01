@@ -220,7 +220,7 @@ contract HEXTimeTokenManager {
         require(collateral.maturity == 0 || collateral.maturity == maturity, "A013");
 
         _updateDailyDataAuto(_currentDay());
-        uint256 extractableAmount = _getExtractableAmount(hsiAddress, maturity);
+        uint256 extractableAmount = getExtractableAmount(hsiAddress, maturity);
         require(collateral.amount + amount <= extractableAmount, "A002");
 
         if (collateral.amount == 0) {
@@ -395,7 +395,7 @@ contract HEXTimeTokenManager {
 
         // End staker gets 1st priority of unlocked HEX (in event of late end stake)
         if (hsiBalance > 0) {
-            uint256 endStakeSubsidy = _calcEndStakeSubsidy(lockedDay, stakedDays, maturity, currentDay, stakeShares);
+            uint256 endStakeSubsidy = calcEndStakeSubsidy(lockedDay, stakedDays, maturity, currentDay, stakeShares);
             if (endStakeSubsidy > 0) {
                 endStakeSubsidy = endStakeSubsidy < hsiBalance? endStakeSubsidy: hsiBalance;
                 hsiBalance -= endStakeSubsidy;
@@ -429,7 +429,7 @@ contract HEXTimeTokenManager {
         external 
     {
         endHEXStakes(data);
-        _redeemHEXTimeTokens(maturity, amount);
+        redeemHEXTimeTokens(maturity, amount);
     }
 
     /**
@@ -447,16 +447,7 @@ contract HEXTimeTokenManager {
      * @param maturity Maturity day of the HTT.
      * @param amount Number of HTTs to redeem.
      */
-    function redeemHEXTimeTokens(uint256 maturity, uint256 amount) external {
-        _redeemHEXTimeTokens(maturity, amount);
-    }
-
-    /**
-     * @dev Redeem HEX Maturity tokens (HTT) for HEX. 
-     * @param maturity Maturity day of the HTT.
-     * @param amount Number of HTTs to redeem.
-     */
-    function _redeemHEXTimeTokens(uint256 maturity, uint256 amount) private {
+    function redeemHEXTimeTokens(uint256 maturity, uint256 amount) public {
         MaturityInfo storage info = maturityToInfo[uint16(maturity)];
 
         HEXTimeToken token = HEXTimeToken(info.tokenAddress);
@@ -516,24 +507,7 @@ contract HEXTimeTokenManager {
         address hsiAddress,
         uint256 maturity
     ) 
-        external 
-        view
-        returns (uint256) 
-    {
-        return _getExtractableAmount(hsiAddress, maturity);
-    }
-
-    /**
-     * @dev Calculates the total quantity of extractable HEX Maturity Tokens (HTT) from a stake.
-     * @param hsiAddress Address of the HSI.
-     * @param maturity maturity of the HTT to extract.
-     * @return Total quantity of extractable HTT.
-     */
-    function _getExtractableAmount(
-        address hsiAddress,
-        uint256 maturity
-    ) 
-        private 
+        public 
         view
         returns (uint256) 
     {
@@ -545,13 +519,13 @@ contract HEXTimeTokenManager {
         require(endStakeDay <= maturity, "A015");
         require(maturity - endStakeDay < MAX_REDEMPTION_DEFERMENT, "A017");
 
-        uint256 reserveDay = _getReserveDay(lockedDay, stakedDays, maturity);
+        uint256 reserveDay = getReserveDay(lockedDay, stakedDays, maturity);
         // only calculate rewards up to the earlier of the current day or the reserve day
-        stakeValue += _calculateRewards(lockedDay, currentDay < reserveDay? currentDay: reserveDay, stakeShares);
+        stakeValue += calculateRewards(lockedDay, currentDay < reserveDay? currentDay: reserveDay, stakeShares);
 
         if (endStakeDay < maturity) {
             // assume worst case scenario and subtract maximal possible late penalty from extractable amount
-            stakeValue -= _calcLatePenalty(lockedDay, stakedDays, maturity + LATE_PENALTY_GRACE_DAYS, stakeValue);
+            stakeValue -= calcLatePenalty(lockedDay, stakedDays, maturity + LATE_PENALTY_GRACE_DAYS, stakeValue);
         }
 
         return stakeValue;
@@ -778,26 +752,7 @@ contract HEXTimeTokenManager {
         uint256 endDay, 
         uint256 stakeShares
     ) 
-        external 
-        view 
-        returns (uint256) 
-    {
-        return _calculateRewards(beginDay, endDay, stakeShares);
-    }
-
-    /**
-     * @dev Calculates accrued HEX rewards for a given range and share amount. 
-     * @param beginDay begin day (inclusive).
-     * @param endDay end day (exclusive).
-     * @param stakeShares Number of shares.
-     * @return Rewards amount.
-     */
-    function _calculateRewards(
-        uint256 beginDay, 
-        uint256 endDay, 
-        uint256 stakeShares
-    ) 
-        private 
+        public 
         view 
         returns (uint256) 
     {
@@ -816,11 +771,11 @@ contract HEXTimeTokenManager {
 
     /**
      * @dev Calculates the subsidy for unlocking a stake. 
-     * @param lockedDay begin day (inclusive).
-     * @param stakedDays Number of days staked.
-     * @param maturity Maturity day of the HTTs minted against the stake.
-     * @param unlockedDay Day the stake is unlocked.
-     * @param stakeShares Number of shares.
+     * @param lockedDay begin day (inclusive)
+     * @param stakedDays Number of days staked
+     * @param maturity Maturity day of the HTTs minted against the stake
+     * @param unlockedDay Day the stake is unlocked
+     * @param stakeShares Number of shares
      * @return Subsidy amount.
      */
     function calcEndStakeSubsidy(
@@ -830,30 +785,7 @@ contract HEXTimeTokenManager {
         uint256 unlockedDay, 
         uint256 stakeShares
     ) 
-        external
-        view 
-        returns (uint256) 
-    {
-        return _calcEndStakeSubsidy(lockedDay, stakedDays, maturity, unlockedDay, stakeShares);
-    }
-
-    /**
-     * @dev Calculates the subsidy for unlocking a stake. 
-     * @param lockedDay begin day (inclusive)
-     * @param stakedDays Number of days staked
-     * @param maturity Maturity day of the HTTs minted against the stake
-     * @param unlockedDay Day the stake is unlocked
-     * @param stakeShares Number of shares
-     * @return Subsidy amount.
-     */
-    function _calcEndStakeSubsidy(
-        uint256 lockedDay, 
-        uint256 stakedDays,
-        uint256 maturity,
-        uint256 unlockedDay, 
-        uint256 stakeShares
-    ) 
-        private 
+        public 
         view 
         returns (uint256) 
     {
@@ -861,9 +793,9 @@ contract HEXTimeTokenManager {
 
         uint256 endDay = lockedDay + stakedDays; 
 
-        uint256 reserveDay = _getReserveDay(lockedDay, stakedDays, maturity); 
-        uint256 reserves = _calculateRewards(reserveDay, endDay, stakeShares);
-        uint256 maxSubsidy = reserves - _calcLatePenalty(lockedDay, stakedDays, unlockedDay, reserves);
+        uint256 reserveDay = getReserveDay(lockedDay, stakedDays, maturity); 
+        uint256 reserves = calculateRewards(reserveDay, endDay, stakeShares);
+        uint256 maxSubsidy = reserves - calcLatePenalty(lockedDay, stakedDays, unlockedDay, reserves);
 
         uint256 daysLate = unlockedDay - maturity - SUBSIDY_GRACE_DAYS;
         uint256 factor = daysLate < 10? daysLate: 10;
@@ -882,26 +814,7 @@ contract HEXTimeTokenManager {
         uint256 stakedDays,
         uint256 maturity 
     ) 
-        external
-        pure 
-        returns (uint256) 
-    {
-        return _getReserveDay(lockedDay, stakedDays, maturity);
-    }
-
-    /**
-     * @dev Calculates the first HEX day to begin reserving stake rewards in the event of an unlock subsidy. 
-     * @param lockedDay begin day (inclusive)
-     * @param stakedDays Number of days staked
-     * @param maturity Maturity day of the HTTs minted against the stake
-     * @return Reserve day
-     */
-    function _getReserveDay(
-        uint256 lockedDay, 
-        uint256 stakedDays,
-        uint256 maturity 
-    ) 
-        private 
+        public 
         pure 
         returns (uint256) 
     {
@@ -920,7 +833,7 @@ contract HEXTimeTokenManager {
     }
 
     /**
-     * @dev Mimics the HEX protocol late penalty calculation.
+     * @dev Calculates the late end stake penalty enforced by the HEX protocol late penalty calculation.
      * @param lockedDay begin day (inclusive)
      * @param stakedDays Number of days staked
      * @param stakeValue The value of the stake in HEX
@@ -932,27 +845,7 @@ contract HEXTimeTokenManager {
         uint256 unlockedDay, 
         uint256 stakeValue
     ) 
-        external 
-        pure 
-        returns (uint256) 
-    {
-        return _calcLatePenalty(lockedDay, stakedDays, unlockedDay, stakeValue);
-    }
-
-    /**
-     * @dev Calculates the late end stake penalty enforced by the HEX protocol late penalty calculation.
-     * @param lockedDay begin day (inclusive)
-     * @param stakedDays Number of days staked
-     * @param stakeValue The value of the stake in HEX
-     * @return Late penalty
-     */
-    function _calcLatePenalty(
-        uint256 lockedDay, 
-        uint256 stakedDays,
-        uint256 unlockedDay, 
-        uint256 stakeValue
-    ) 
-        private 
+        public 
         pure 
         returns (uint256) 
     {
