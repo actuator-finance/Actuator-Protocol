@@ -63,9 +63,6 @@ describe("Actuator Protocol", function () {
     const currentTime = (await ethers.provider.getBlock('latest')).timestamp + SECS_PER_DAY * 10;
 
     httManager = await Token.deploy(
-      Const.HEX_ADDRESS, 
-      Const.HSIM_ADDRESS, 
-      Const.HEDRON_ADDRESS, 
       owner1.address, 
       Const.AMM_FACTORY_ADDRESS,
       [0n], 
@@ -227,7 +224,7 @@ describe("Actuator Protocol", function () {
     await httManager.connect(props.owner2).endCollateralizedHEXStake(hsiAddress1, 0, 0, 0);
   });
     
-  describe("Maturity <> End Stake Day", async function () {
+  describe("Maturity > End Stake Day", async function () {
     let props: UnwrapPromise<ReturnType<typeof setup>>
     beforeEach(async function () {
       props = await setup()
@@ -271,6 +268,75 @@ describe("Actuator Protocol", function () {
       expect(postBalance - preBalance).to.be.equal(mintedAmount + latePayout);
     });
 
+  })
+  
+  describe("Maturity < End Stake Day", async function () {
+    let props: UnwrapPromise<ReturnType<typeof setup>>
+    beforeEach(async function () {
+      props = await setup()
+    })
+
+    it("Revert due to exceeding extractable amount", async function () {
+      const stakeInfo =  await createStakes(props, 200)
+      const tx = httManager.connect(props.owner1).mintHEXTimeTokens(0, stakeInfo.stakedHearts + 1n, stakeInfo.endDay - 10);
+      await expect(tx).to.be.revertedWith('A002');
+    })
+    
+    it("Revert due currentDay > maturity", async function () {
+      const stakeInfo =  await createStakes(props)
+      await advanceDays(stakeInfo.stakedDays - 9)
+      const tx = httManager.connect(props.owner1).mintHEXTimeTokens(0, stakeInfo.stakedHearts, stakeInfo.endDay - 10);
+      await expect(tx).to.be.revertedWith('A045');
+    })
+    
+    it("Revert due to min penalty days", async function () {
+      const stakeInfo =  await createStakes(props)
+      const tx = httManager.connect(props.owner1).mintHEXTimeTokens(0, stakeInfo.stakedHearts, stakeInfo.endDay - 10);
+      await expect(tx).to.be.revertedWith('A046');
+    })
+    
+    it("Revert due to invalid early redemption day", async function () {
+      const stakeInfo =  await createStakes(props, 200)
+      tx = httManager.connect(props.owner1).mintHEXTimeTokens(0, stakeInfo.stakedHearts, stakeInfo.endDay - 89);
+      await expect(tx).to.be.revertedWith('A047');
+    })
+
+    it("Extract twice and retire", async function () {
+      const stakeInfo =  await createStakes(props, 200)
+      await httManager.connect(props.owner1).mintHEXTimeTokens(0, stakeInfo.stakedHearts, stakeInfo.endDay - 10);
+      await advanceDays(102)
+      await httManager.connect(props.owner1).mintHEXTimeTokens(0, 10n, stakeInfo.endDay - 10);
+      await advanceDays(50)
+      await httManager.connect(props.owner1).retireHEXTimeTokens(0, 0, stakeInfo.stakedHearts + 10n);
+    })
+
+    it("Extract, end stake, redeem", async function () {
+      const stakeInfo =  await createStakes(props, 200)
+      const maturity = stakeInfo.endDay - 10
+      await httManager.connect(props.owner1).mintHEXTimeTokens(0, stakeInfo.stakedHearts, maturity);
+
+      // const hexBalance1A = await hex.balanceOf(props.owner1.address)
+      // console.log('hexBalance1A: ', hexBalance1A);
+
+      await advanceDays(195)
+      await httManager.connect(props.owner2).endCollateralizedHEXStake(stakeInfo.hsiAddress1, 0, 0, 0);
+
+      const httBalance1A = await matBalance(props.owner1.address, maturity)
+      await exec(httManager.connect(props.owner1).redeemHEXTimeTokens(maturity, httBalance1A))
+      // const hexBalance1C = await hex.balanceOf(props.owner1.address)
+      // const hexBalance2B = await hex.balanceOf(props.owner2.address)        
+    })
+
+    it("Extract, end stake, redeem 2", async function () {
+      const stakeInfo =  await createStakes(props, 200)
+      const maturity = stakeInfo.endDay - 10
+      await httManager.connect(props.owner1).mintHEXTimeTokens(0, stakeInfo.stakedHearts, maturity);
+
+      await advanceDays(215)
+      await httManager.connect(props.owner2).endCollateralizedHEXStake(stakeInfo.hsiAddress1, 0, 0, 0);
+      const httBalance1A = await matBalance(props.owner1.address, maturity)
+      await exec(httManager.connect(props.owner1).redeemHEXTimeTokens(maturity, httBalance1A))
+    })
   })
   
   describe("Delegation", async function () {
@@ -730,10 +796,6 @@ describe("Actuator Protocol", function () {
     tx = httManager.connect(props.owners[1]).mintHEXTimeTokens(0, 0, endStake + 200n)
     await expect(tx).to.be.revertedWith('A023');
 
-    // HTT redemption day can't be before end stake
-    tx = httManager.connect(props.owners[1]).mintHEXTimeTokens(0, 10n, endStake - 1n)
-    await expect(tx).to.be.revertedWith('A015');
-    
     // can't mint tokens more than 629 days after end stake
     tx = httManager.connect(props.owners[1]).mintHEXTimeTokens(0, 10n, endStake + 630n)
     await expect(tx).to.be.revertedWith('A017');

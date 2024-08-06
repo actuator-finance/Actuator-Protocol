@@ -24,6 +24,10 @@ contract HEXTimeTokenManager {
     uint256 private constant PAYOUT_START_DAY = 800;
     uint256 private constant SUBSIDY_GRACE_DAYS = 3;
     uint256 private constant HEX_LAUNCH = 1575331200;
+    address private constant HEX_ADDRESS = 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39;
+    address private constant HSIM_ADDRESS = 0x8BD3d1472A656e312E94fB1BbdD599B8C51D18e3;
+    address private constant HEDRON_ADDRESS = 0x3819f64f282bf135d62168C1e513280dAF905e06;
+    uint256 internal constant EARLY_PENALTY_MIN_DAYS = 90;
 
     struct Collateral { 
         uint72 amount; 
@@ -46,7 +50,6 @@ contract HEXTimeTokenManager {
     address public actuatorAddress;
     address public masterChefAddress;
     address private _creator;
-    address private _hsimAddress;
     IHEX private _hx;
     IHEXStakeInstanceManager private _hsim;
     IHedron private _hedron;
@@ -70,9 +73,6 @@ contract HEXTimeTokenManager {
     event EndCollateralizedStake(address indexed user, address indexed hsiAddress);
 
     constructor(
-        address hexAddress,
-        address hsimAddress,
-        address hedronAddress,
         address teamAddress,
         address factoryAddress,
         uint72[] memory initialPayouts,
@@ -81,13 +81,12 @@ contract HEXTimeTokenManager {
         uint256[3] memory _teamSupplySchedule,
         uint256[14] memory _poolPointSchedule
     ) {
-        _hx = IHEX(payable(hexAddress));
-        _hsim = IHEXStakeInstanceManager(payable(hsimAddress));
-        _hedron = IHedron(hedronAddress);
-        MasterChef masterChef = new MasterChef(hexAddress, teamAddress, factoryAddress, farmStartTime, _farmSupplySchedule, _teamSupplySchedule, _poolPointSchedule);
+        _hx = IHEX(HEX_ADDRESS);
+        _hsim = IHEXStakeInstanceManager(HSIM_ADDRESS);
+        _hedron = IHedron(HEDRON_ADDRESS);
+        MasterChef masterChef = new MasterChef(teamAddress, factoryAddress, farmStartTime, _farmSupplySchedule, _teamSupplySchedule, _poolPointSchedule);
         actuatorAddress = address(masterChef.actr());
         masterChefAddress = address(masterChef);
-        _hsimAddress = hsimAddress;
         payouts = initialPayouts;
     }
 
@@ -169,7 +168,7 @@ contract HEXTimeTokenManager {
     function hexStakeStart(uint256 amount, uint256 length) external returns (address) {
         require(_hx.transferFrom(msg.sender, address(this), amount), "A016");
 
-        _hx.increaseAllowance(_hsimAddress, amount);       
+        _hx.increaseAllowance(HSIM_ADDRESS, amount);       
 
         address hsiAddress = _hsim.hexStakeStart(amount, length);
 
@@ -377,13 +376,10 @@ contract HEXTimeTokenManager {
         uint256 currentDay = _currentDay(); 
         (,, uint256 stakeShares, uint16 lockedDay, uint16 stakedDays,,) = _hx.stakeLists(hsiAddress, 0);
 
-        if (owner == msg.sender) {
+        if (currentDay < maturity) {
             // stake owner can end stake once fully served
-            require(currentDay >= lockedDay + stakedDays, "A020");
-        } else {
-            // anyone can end stake once fully matured
-            require(currentDay >= maturity, "A022");
-        }
+            require(owner == msg.sender && currentDay >= lockedDay + stakedDays, "A022");
+        } 
 
         _pruneHSI(hsiLists[owner], hsiIndex);
         _pruneCollateralizedHSI(maturity, collateralIndex);
@@ -395,7 +391,8 @@ contract HEXTimeTokenManager {
 
         // End staker gets 1st priority of unlocked HEX (in event of late end stake)
         if (hsiBalance > 0) {
-            uint256 endStakeSubsidy = calcEndStakeSubsidy(lockedDay, stakedDays, maturity, currentDay, stakeShares);
+            uint256 effectiveStakedDays = maturity - lockedDay < stakedDays? maturity - lockedDay: stakedDays;
+            uint256 endStakeSubsidy = calcEndStakeSubsidy(lockedDay, effectiveStakedDays, maturity, currentDay, stakeShares);
             if (endStakeSubsidy > 0) {
                 endStakeSubsidy = endStakeSubsidy < hsiBalance? endStakeSubsidy: hsiBalance;
                 hsiBalance -= endStakeSubsidy;
@@ -515,17 +512,28 @@ contract HEXTimeTokenManager {
         uint256 endStakeDay = lockedDay + stakedDays;
         uint256 currentDay = _currentDay();
 
-        require(currentDay < endStakeDay, "A014");
-        require(endStakeDay <= maturity, "A015");
-        require(maturity - endStakeDay < MAX_REDEMPTION_DEFERMENT, "A017");
+        if (maturity < endStakeDay) {
+            require(currentDay < maturity, "A045");
+            uint256 penaltyDays = (stakedDays + 1) / 2;
+            require(penaltyDays >= EARLY_PENALTY_MIN_DAYS, "A046");
 
-        uint256 reserveDay = getReserveDay(lockedDay, stakedDays, maturity);
-        // only calculate rewards up to the earlier of the current day or the reserve day
-        stakeValue += calculateRewards(lockedDay, currentDay < reserveDay? currentDay: reserveDay, stakeShares);
+            uint256 penaltyEndDay = lockedDay + penaltyDays;
+            uint256 effectiveStakedDays = maturity - lockedDay;
+            uint256 reserveDay = getReserveDay(lockedDay, effectiveStakedDays, maturity);
+            require(reserveDay >= penaltyEndDay, "A047");
+            stakeValue += calculateRewards(penaltyEndDay, currentDay < reserveDay? currentDay: reserveDay, stakeShares);
+        } else {
+            require(currentDay < endStakeDay, "A014");
+            require(maturity - endStakeDay < MAX_REDEMPTION_DEFERMENT, "A017");
 
-        if (endStakeDay < maturity) {
-            // assume worst case scenario and subtract maximal possible late penalty from extractable amount
-            stakeValue -= calcLatePenalty(lockedDay, stakedDays, maturity + LATE_PENALTY_GRACE_DAYS, stakeValue);
+            uint256 reserveDay = getReserveDay(lockedDay, stakedDays, maturity);
+            // only calculate rewards up to the earlier of the current day or the reserve day
+            stakeValue += calculateRewards(lockedDay, currentDay < reserveDay? currentDay: reserveDay, stakeShares);
+
+            if (endStakeDay < maturity) {
+                // assume worst case scenario and subtract maximal possible late penalty from extractable amount
+                stakeValue -= calcLatePenalty(lockedDay, stakedDays, maturity + LATE_PENALTY_GRACE_DAYS, stakeValue);
+            }
         }
 
         return stakeValue;

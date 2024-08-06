@@ -84,6 +84,9 @@ export const ERROR_CODES = {
   A042: 'Caller is not allowed',
   A043: 'Deposit amount must be greater than 0',
   A044: 'Farm Deposits must be greater than 0 to collect ACTR emissions',
+  A045: 'Redemption day must be in the future',
+  A046: 'Staked days must be at least 180 days to mint HEX time tokens whose maturity is before end stake',
+  A047: 'Redemption day must be set to a later day in the future',
 }
 
 export const ACCOUNTS = [

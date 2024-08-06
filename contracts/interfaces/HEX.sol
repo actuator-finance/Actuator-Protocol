@@ -54,8 +54,6 @@ interface IHEX {
         address indexed referrerAddr
     );
 
-    fallback() external payable;
-
     function allocatedSupply() external view returns (uint256);
 
     function allowance(address owner, address spender)

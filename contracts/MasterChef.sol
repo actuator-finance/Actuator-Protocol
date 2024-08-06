@@ -13,6 +13,7 @@ import { IPulseXFactory } from "./interfaces/PulseXFactory.sol";
 contract MasterChef {
     using SafeERC20 for IERC20;
 
+    address private constant HEX_ADDRESS = 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39;
     uint256 constant YEAR = 365 days;
     
     address public immutable _hexAddress;
@@ -71,7 +72,6 @@ contract MasterChef {
     event CollectEmissions(address indexed user, uint256 amount);
 
     constructor(
-        address hexAddress,
         address teamAddress,
         address _factoryAddress,
         uint256 _startTime,
@@ -87,7 +87,6 @@ contract MasterChef {
         teamEmissionSchedule = _teamEmissionSchedule;
         poolPointSchedule = _poolPointSchedule;
         _teamAddress = teamAddress;
-        _hexAddress = hexAddress;
         factory = IPulseXFactory(_factoryAddress);
     }
 
@@ -253,9 +252,9 @@ contract MasterChef {
         }
 
         if (_lastMassUpdate == 0) {
-            address pairAddressHTT3000 = factory.getPair(_hexAddress, _httManager.getOrCreateHEXTimeToken(2999));
-            address pairAddressHTT5000 = factory.getPair(_hexAddress, _httManager.getOrCreateHEXTimeToken(4999));
-            address pairAddressHTT7000 = factory.getPair(_hexAddress, _httManager.getOrCreateHEXTimeToken(6999));
+            address pairAddressHTT3000 = factory.getPair(HEX_ADDRESS, _httManager.getOrCreateHEXTimeToken(2999));
+            address pairAddressHTT5000 = factory.getPair(HEX_ADDRESS, _httManager.getOrCreateHEXTimeToken(4999));
+            address pairAddressHTT7000 = factory.getPair(HEX_ADDRESS, _httManager.getOrCreateHEXTimeToken(6999));
             require(pairAddressHTT3000 != address(0), "A038");
             require(pairAddressHTT5000 != address(0), "A038");
             require(pairAddressHTT7000 != address(0), "A038");
@@ -264,8 +263,8 @@ contract MasterChef {
             _add(poolPointSchedule[1], IERC20(pairAddressHTT5000));
             _add(poolPointSchedule[2], IERC20(pairAddressHTT7000));
         } else if (_lastMassUpdate < startTime + YEAR && block.timestamp >= startTime + YEAR) {
-            address pairAddressHTT4000 = factory.getPair(_hexAddress, _httManager.getOrCreateHEXTimeToken(3999));
-            address pairAddressHTT6000 = factory.getPair(_hexAddress, _httManager.getOrCreateHEXTimeToken(5999));
+            address pairAddressHTT4000 = factory.getPair(HEX_ADDRESS, _httManager.getOrCreateHEXTimeToken(3999));
+            address pairAddressHTT6000 = factory.getPair(HEX_ADDRESS, _httManager.getOrCreateHEXTimeToken(5999));
             require(pairAddressHTT4000 != address(0), "A038");
             require(pairAddressHTT6000 != address(0), "A038");
             _set(0, poolPointSchedule[3]);
@@ -274,7 +273,7 @@ contract MasterChef {
             _add(poolPointSchedule[6], IERC20(pairAddressHTT6000));
             _set(2, poolPointSchedule[7]);
         } else if (_lastMassUpdate < startTime + (YEAR * 2) && block.timestamp >= startTime + (YEAR * 2)) {
-            address pairAddressHTT8000 = factory.getPair(_hexAddress, _httManager.getOrCreateHEXTimeToken(7999));
+            address pairAddressHTT8000 = factory.getPair(HEX_ADDRESS, _httManager.getOrCreateHEXTimeToken(7999));
             require(pairAddressHTT8000 != address(0), "A038");
             _set(0, poolPointSchedule[8]);
             _set(3, poolPointSchedule[9]);
