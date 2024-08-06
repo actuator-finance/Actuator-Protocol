@@ -27,7 +27,7 @@ contract HEXTimeTokenManager {
     address private constant HEX_ADDRESS = 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39;
     address private constant HSIM_ADDRESS = 0x8BD3d1472A656e312E94fB1BbdD599B8C51D18e3;
     address private constant HEDRON_ADDRESS = 0x3819f64f282bf135d62168C1e513280dAF905e06;
-    uint256 internal constant EARLY_PENALTY_MIN_DAYS = 90;
+    uint256 private constant EARLY_PENALTY_MIN_DAYS = 90;
 
     struct Collateral { 
         uint72 amount; 
