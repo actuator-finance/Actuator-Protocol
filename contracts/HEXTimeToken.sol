@@ -9,6 +9,7 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract HEXTimeToken is ERC20 {
     uint256 public constant CREATION_FEE_RATE = 100; // 100 basis points tax, i.e., 1%
+    uint256 private constant ACC_HTT_PRECISION = 1e22; // Original was 1e12. However, HEX has 8 decimals. So 1e22 is used to preserve the relative precision.
 
     // Info of each user.
     struct UserInfo {
@@ -68,7 +69,7 @@ contract HEXTimeToken is ERC20 {
 
         uint256 taxAmount = calculateTax(amount);
         uint256 amountAfterTax = amount - taxAmount;
-        accHttPerShare = accHttPerShare + (taxAmount * 1e12 / totalDeposits);
+        accHttPerShare = accHttPerShare + (taxAmount * ACC_HTT_PRECISION / totalDeposits);
         _mint(address(this), taxAmount);
         _mint(to, amountAfterTax);
     }
@@ -100,10 +101,10 @@ contract HEXTimeToken is ERC20 {
 
         totalDeposits += _amount;
 
-        uint256 pending = (user.amount * accHttPerShare / 1e12) - user.rewardDebt;
+        uint256 pending = (user.amount * accHttPerShare / ACC_HTT_PRECISION) - user.rewardDebt;
 
         user.amount = user.amount + _amount;
-        user.rewardDebt = user.amount * accHttPerShare / 1e12;
+        user.rewardDebt = user.amount * accHttPerShare / ACC_HTT_PRECISION;
         user.capitalAdded = block.timestamp;
 
         if (pending > 0) {
@@ -128,10 +129,10 @@ contract HEXTimeToken is ERC20 {
 
         totalDeposits -= _amount;
 
-        uint256 pending = (user.amount * accHttPerShare / 1e12) - user.rewardDebt;
+        uint256 pending = (user.amount * accHttPerShare / ACC_HTT_PRECISION) - user.rewardDebt;
 
         user.amount = user.amount - _amount;
-        user.rewardDebt = user.amount * accHttPerShare / 1e12;
+        user.rewardDebt = user.amount * accHttPerShare / ACC_HTT_PRECISION;
 
         if (pending > 0) {
             safeHttTransfer(account, pending);
@@ -152,9 +153,9 @@ contract HEXTimeToken is ERC20 {
 
         require(user.amount > 0, "A026");
 
-        uint256 pending = (user.amount * accHttPerShare / 1e12) - user.rewardDebt;
+        uint256 pending = (user.amount * accHttPerShare / ACC_HTT_PRECISION) - user.rewardDebt;
         
-        user.rewardDebt = user.amount * accHttPerShare / 1e12;
+        user.rewardDebt = user.amount * accHttPerShare / ACC_HTT_PRECISION;
 
         if (pending > 0) {
             safeHttTransfer(msg.sender, pending);

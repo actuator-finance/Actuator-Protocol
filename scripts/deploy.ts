@@ -1,15 +1,18 @@
 import { ethers } from "hardhat";
 import * as Const from "./constants";
+import * as Util from "./util";
 
 async function main() {
   const currentTime = Math.floor(Date.now() / 1000);
+    const payouts = await Util.getPayoutsTemp()
+
   const lock = await ethers.deployContract("HEXTimeTokenManager", [
     process.env.TEAM_ADDRESS, 
-    Const.AMM_FACTORY_ADDRESS,
-    [0n], 
-    currentTime,
+    process.env.PULSEX_FACTORY_ADDRESS,
+    payouts, 
+    currentTime + (60*60 * 5),
     Const.FARM_EMISSION_SCHEDULE,
-    Const.TEAM_EMISSION_SCHEDULE,
+    Const.TEAM_EMISSION,
     Const.POOL_POINT_SCHEDULE,
   ]);
 

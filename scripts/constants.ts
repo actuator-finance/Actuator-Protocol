@@ -6,8 +6,7 @@ export const DAI_ADDRESS = '0x6B175474E89094C44Da98b954EedeAC495271d0F';
 export const DAI_HOLDER = '0xBF293D5138a2a1BA407B43672643434C43827179';
 export const HEX_HOLDER = '0x075e72a5eDf65F0A5f44699c7654C1a76941Ddc8'
 
-// export const AMM_FACTORY_ADDRESS = '0x3B53e9270d0210214B9c242eb16C252474c5be01' // pulsex testnet
-export const AMM_FACTORY_ADDRESS = '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f' // uniswap
+export const UNISWAP_FACTORY_ADDRESS = '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f' // uniswap
 
 export const ROUTER_ADDRESS = '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'
 
@@ -17,6 +16,7 @@ export const PAYOUT_START_DAY = 800;
 const scaler = 1000000000000000000n
 export const FARM_EMISSION_SCHEDULE: [bigint, bigint, bigint] = [350000000n * scaler, 250000000n * scaler, 150000000n * scaler]
 export const TEAM_EMISSION_SCHEDULE: [bigint, bigint, bigint] = [116000000n * scaler, 83000000n * scaler, 51000000n * scaler]
+export const TEAM_EMISSION: bigint = 250000000n * scaler
 export const POOL_POINT_SCHEDULE = [
   // year 1
   1000,

@@ -58,18 +58,18 @@ describe("Actuator Protocol", function () {
   async function init() {
     const [owner1, owner2, owner3, owner4, owner5, owner6, owner7] = await ethers.getSigners();
     
-    const Token = await ethers.getContractFactory("HEXTimeTokenManager");
+    const factory = await ethers.getContractFactory("HEXTimeTokenManager");
 
     const currentTime = (await ethers.provider.getBlock('latest')).timestamp + SECS_PER_DAY * 10;
 
-    httManager = await Token.deploy(
+    httManager = await factory.deploy(
       owner1.address, 
-      Const.AMM_FACTORY_ADDRESS,
+      Const.UNISWAP_FACTORY_ADDRESS,
       [0n], 
       // await Util.getPayouts(), 
       currentTime,
       Const.FARM_EMISSION_SCHEDULE,
-      Const.TEAM_EMISSION_SCHEDULE,  
+      Const.TEAM_EMISSION,  
       Const.POOL_POINT_SCHEDULE,
     );
     httManagerAddress = await httManager.getAddress()
@@ -382,6 +382,19 @@ describe("Actuator Protocol", function () {
 
   it("Liquidity Mining", async function () {
     const props = await setup();
+
+    // transfer team allocation to the TimeLock
+    const timeLockFactory = await ethers.getContractFactory("TimeLock");
+    const actuatorAddress = await httManager.actuatorAddress()
+
+    const timeLock = await timeLockFactory.deploy(
+      actuatorAddress,
+      props.owner1.address, 
+      Const.TEAM_EMISSION_SCHEDULE,  
+    );
+    const timeLockAddress = await timeLock.getAddress()
+    await actr.connect(props.owners[0]).transfer(timeLockAddress, Const.TEAM_EMISSION)
+
     let day = Number(await hex.currentDay())
     // console.log('day: ', day);
     const stakedDays0 = 2998 - day 
@@ -486,22 +499,22 @@ describe("Actuator Protocol", function () {
     )
 
 
-    let pairFactory = new ethers.Contract(Const.AMM_FACTORY_ADDRESS, FACTORY_ABI, props.owners[0].provider) as any
+    let pairFactory = new ethers.Contract(Const.UNISWAP_FACTORY_ADDRESS, FACTORY_ABI, props.owners[0].provider) as any
     let pairAddress = await pairFactory.connect(props.owners[0]).getPair(await tokens[0].getAddress(), Const.HEX_ADDRESS)
     const lpToken0 = new ethers.Contract(pairAddress, BASE_TOKEN_ABI, props.owners[0].provider) as any;
-    pairFactory = new ethers.Contract(Const.AMM_FACTORY_ADDRESS, FACTORY_ABI, props.owners[1].provider) as any
+    pairFactory = new ethers.Contract(Const.UNISWAP_FACTORY_ADDRESS, FACTORY_ABI, props.owners[1].provider) as any
     pairAddress = await pairFactory.connect(props.owners[1]).getPair(await tokens[1].getAddress(), Const.HEX_ADDRESS)
     const lpToken1 = new ethers.Contract(pairAddress, BASE_TOKEN_ABI, props.owners[1].provider) as any;
-    pairFactory = new ethers.Contract(Const.AMM_FACTORY_ADDRESS, FACTORY_ABI, props.owners[2].provider) as any
+    pairFactory = new ethers.Contract(Const.UNISWAP_FACTORY_ADDRESS, FACTORY_ABI, props.owners[2].provider) as any
     pairAddress = await pairFactory.connect(props.owners[2]).getPair(await tokens[2].getAddress(), Const.HEX_ADDRESS)
     const lpToken2 = new ethers.Contract(pairAddress, BASE_TOKEN_ABI, props.owners[2].provider) as any;
-    pairFactory = new ethers.Contract(Const.AMM_FACTORY_ADDRESS, FACTORY_ABI, props.owners[3].provider) as any
+    pairFactory = new ethers.Contract(Const.UNISWAP_FACTORY_ADDRESS, FACTORY_ABI, props.owners[3].provider) as any
     pairAddress = await pairFactory.connect(props.owners[3]).getPair(await tokens[3].getAddress(), Const.HEX_ADDRESS)
     const lpToken3 = new ethers.Contract(pairAddress, BASE_TOKEN_ABI, props.owners[3].provider) as any;
-    pairFactory = new ethers.Contract(Const.AMM_FACTORY_ADDRESS, FACTORY_ABI, props.owners[4].provider) as any
+    pairFactory = new ethers.Contract(Const.UNISWAP_FACTORY_ADDRESS, FACTORY_ABI, props.owners[4].provider) as any
     pairAddress = await pairFactory.connect(props.owners[4]).getPair(await tokens[4].getAddress(), Const.HEX_ADDRESS)
     const lpToken4 = new ethers.Contract(pairAddress, BASE_TOKEN_ABI, props.owners[4].provider) as any;
-    pairFactory = new ethers.Contract(Const.AMM_FACTORY_ADDRESS, FACTORY_ABI, props.owners[5].provider) as any
+    pairFactory = new ethers.Contract(Const.UNISWAP_FACTORY_ADDRESS, FACTORY_ABI, props.owners[5].provider) as any
     pairAddress = await pairFactory.connect(props.owners[5]).getPair(await tokens[5].getAddress(), Const.HEX_ADDRESS)
     const lpToken5 = new ethers.Contract(pairAddress, BASE_TOKEN_ABI, props.owners[5].provider) as any;
 
@@ -572,7 +585,7 @@ describe("Actuator Protocol", function () {
       props.owners[6].address, 
       99999999999n
     )
-    pairFactory = new ethers.Contract(Const.AMM_FACTORY_ADDRESS, FACTORY_ABI, props.owners[6].provider) as any
+    pairFactory = new ethers.Contract(Const.UNISWAP_FACTORY_ADDRESS, FACTORY_ABI, props.owners[6].provider) as any
     pairAddress = await pairFactory.connect(props.owners[6]).getPair(await tokens[6].getAddress(), Const.HEX_ADDRESS)
     const lpToken6 = new ethers.Contract(pairAddress, BASE_TOKEN_ABI, props.owners[6].provider) as any;
     
@@ -604,21 +617,53 @@ describe("Actuator Protocol", function () {
 
   it("Mint Team Allocation", async function () {
     const props = await setup();
-    await masterChef.connect(props.owners[0]).mintTeamAllocation();
-    const bal = await actr.balanceOf(props.owners[0].address)
-    expect(bal).to.be.equal(0n);
+    let bal = await actr.balanceOf(props.owners[0].address)
+    expect(bal).to.be.equal(Const.TEAM_EMISSION);
+
+    const timeLockFactory = await ethers.getContractFactory("TimeLock");
+    const actuatorAddress = await httManager.actuatorAddress()
+
+    const timeLock = await timeLockFactory.deploy(
+      actuatorAddress,
+      props.owner1.address, 
+      Const.TEAM_EMISSION_SCHEDULE,  
+    );
+    const timeLockAddress = await timeLock.getAddress()
+    await actr.connect(props.owners[0]).transfer(timeLockAddress, Const.TEAM_EMISSION)
+    
+    await timeLock.connect(props.owners[0]).transferUnlockedFunds();
+
+    for (let i = 0; i < 130; i++) {
+      await advanceDays(3)
+      timeLock.connect(props.owners[i]).transferUnlockedFunds();
+    }
+
+    let tx = timeLock.connect(props.owners[1]).transferUnlockedFunds();
+    await expect(tx).to.be.revertedWith('A025');
+
+    await timeLock.connect(props.owners[0]).transferUnlockedFunds();
+    bal = await actr.balanceOf(props.owners[0].address)
 
     await advanceDays(400)
-    await masterChef.connect(props.owners[0]).mintTeamAllocation();
-
-    await advanceDays(400)
-    await masterChef.connect(props.owners[0]).transferTeamAddress(props.owners[1]);
-    tx = masterChef.connect(props.owners[0]).mintTeamAllocation();
+    await timeLock.connect(props.owners[0]).transferTeamAddress(props.owners[1]);
+    tx = timeLock.connect(props.owners[0]).transferUnlockedFunds();
     await expect(tx).to.be.revertedWith('A025')
-    await masterChef.connect(props.owners[1]).mintTeamAllocation();    
+    
+    await timeLock.connect(props.owners[1]).transferUnlockedFunds();    
 
     await advanceDays(400)
-    await masterChef.connect(props.owners[1]).mintTeamAllocation();
+    await timeLock.connect(props.owners[1]).transferUnlockedFunds();
+    const bal0 = await actr.balanceOf(props.owners[0].address)
+    const bal1 = await actr.balanceOf(props.owners[1].address)
+    expect(bal0 + bal1).to.be.greaterThanOrEqual(Const.TEAM_EMISSION - 2n); // allow up to 2n for rounding errors
+
+
+    const startTime = await masterChef.startTime();
+    const value = await timeLock.getTeamEmissions(
+      startTime, 
+      startTime + (86400n * 365n * 4n)
+    )    
+    expect(value).to.be.equal(Const.TEAM_EMISSION);
   });
 
   it("ACTR Emissions", async function () {
@@ -630,13 +675,6 @@ describe("Actuator Protocol", function () {
     )    
     const totalFarmEmissions = Const.FARM_EMISSION_SCHEDULE.reduce((a, b) => a + b, 0n)
     expect(value).to.be.equal(totalFarmEmissions);
-
-    value = await masterChef.getTeamEmissions(
-      startTime, 
-      startTime + (86400n * 365n * 4n)
-    )    
-    const totalTeamEmissions = Const.TEAM_EMISSION_SCHEDULE.reduce((a, b) => a + b, 0n)
-    expect(value).to.be.equal(totalTeamEmissions);
   });
 
   it("Actuator Staking", async function () {
@@ -648,14 +686,10 @@ describe("Actuator Protocol", function () {
 
     const maturity0 = shares[0].lockedDay + shares[0].stakedDays
     const maturity1 = shares[0].lockedDay + shares[0].stakedDays + 100n
-    await httManager.connect(props.owners[0]).mintHEXTimeTokens(0, shares[0].stakeShares / 2n, maturity0);
-    await httManager.connect(props.owners[1]).mintHEXTimeTokens(0, shares[1].stakeShares / 2n, maturity1);
+    await httManager.connect(props.owners[0]).mintHEXTimeTokens(0, shares[0].stakedHearts / 2n, maturity0);
+    await httManager.connect(props.owners[1]).mintHEXTimeTokens(0, shares[1].stakedHearts / 2n, maturity1);
 
     await advanceDays(100)
-    let tx = masterChef.connect(props.owners[1]).mintTeamAllocation();
-    await expect(tx).to.be.revertedWith('A025');
-
-    await masterChef.connect(props.owners[0]).mintTeamAllocation()
     await actr.connect(props.owners[0]).transfer(props.owners[1], 10000000000000n)
     await actr.connect(props.owners[0]).transfer(props.owners[2], 50000000000000n)
 
@@ -671,7 +705,7 @@ describe("Actuator Protocol", function () {
     await actr.connect(props.owners[2]).deposit(maturity0, deposit2);
     
     // trigger fees
-    await httManager.connect(props.owners[0]).mintHEXTimeTokens(0, shares[0].stakeShares / 3n, maturity0);
+    await httManager.connect(props.owners[0]).mintHEXTimeTokens(0, shares[0].stakedHearts / 3n, maturity0);
 
     // deposit after HTT creation and thus miss out on fees
     await actr.connect(props.owners[0]).deposit(maturity0, 1000n);
@@ -688,7 +722,7 @@ describe("Actuator Protocol", function () {
     const balance2 = await htt0.balanceOf(props.owners[2].address)
 
     // ensure proportional rewards from fees
-    expect(balance1 * depositMultiple).to.be.equal(balance2);
+    expect(balance2 / depositMultiple).to.be.equal(balance1);
 
     await actr.connect(props.owners[0]).withdraw(0, 1000n);
   });

@@ -14,3 +14,4 @@ cache
 artifacts
 docs
 abi
+contracts/TimeLock.sol

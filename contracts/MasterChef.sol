@@ -12,17 +12,14 @@ import { IPulseXFactory } from "./interfaces/PulseXFactory.sol";
 
 contract MasterChef {
     using SafeERC20 for IERC20;
+    uint256 private constant ACC_ACTR_PRECISION = 1e24; 
 
     address private constant HEX_ADDRESS = 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39;
     uint256 constant YEAR = 365 days;
     
-    address public immutable _hexAddress;
     uint256[3] public farmEmissionSchedule;
-    uint256[3] public teamEmissionSchedule;
     uint256[14] public poolPointSchedule;
 
-    address private _teamAddress;
-    uint256 private _lastTeamMint;
     uint256 private _lastMassUpdate;
 
     // Info of each user.
@@ -47,7 +44,7 @@ contract MasterChef {
         IERC20 lpToken;           // Address of LP token contract.
         uint256 allocPoint;       // How many allocation points assigned to this pool. ACTR to distribute per second.
         uint256 lastRewardTime;  // Last time that ACTR distribution occurs.
-        uint256 accActrPerShare; // Accumulated ACTR per share, times 1e12. See below.
+        uint256 accActrPerShare; // Accumulated ACTR per share, times 1e24. See below.
     }
 
     Actuator public actr;
@@ -76,18 +73,16 @@ contract MasterChef {
         address _factoryAddress,
         uint256 _startTime,
         uint256[3] memory _farmEmissionSchedule,
-        uint256[3] memory _teamEmissionSchedule,
+        uint256 teamEmission,
         uint256[14] memory _poolPointSchedule
     ) {
         _httManager = HEXTimeTokenManager(msg.sender);
         actr = new Actuator(msg.sender);
         startTime = _startTime;
-        _lastTeamMint = _startTime;
         farmEmissionSchedule = _farmEmissionSchedule;
-        teamEmissionSchedule = _teamEmissionSchedule;
         poolPointSchedule = _poolPointSchedule;
-        _teamAddress = teamAddress;
         factory = IPulseXFactory(_factoryAddress);
+        actr.mint(teamAddress, teamEmission);
     }
 
     /**
@@ -152,16 +147,6 @@ contract MasterChef {
     }
 
     /**
-     * @dev Public function to fetch the team ACTR emission amount within 2 timestamp. 
-     * @param _from Start date to calculate emissions from.
-     * @param _to End date to calculate emissions to.
-     * @return Total ACTR Emissions.
-    */
-    function getTeamEmissions(uint256 _from, uint256 _to) public view returns (uint256) {
-        return _getEmissions(_from, _to, teamEmissionSchedule);
-    }
-
-    /**
      * @dev Generic function to fetch the ACTR emission amount within 2 dates based on the provided emission schedule.
      * @param _from Start date to calculate emissions from.
      * @param _to End date to calculate emissions to.
@@ -203,28 +188,6 @@ contract MasterChef {
     }
 
     /**
-     * @dev Priveleged function to mint the accrued team allocation since previous mint.
-     * @return ACTR amount minted.
-     * 
-    */
-    function mintTeamAllocation() external returns (uint256) {
-        require(msg.sender == _teamAddress, "A025");
-        
-        uint256 currentTeamMint = block.timestamp;
-        if (currentTeamMint <= _lastTeamMint) {
-            return 0;
-        }
-
-        uint256 mintAmount = getTeamEmissions(_lastTeamMint, currentTeamMint);
-
-        _lastTeamMint = currentTeamMint;
-
-        actr.mint(_teamAddress, mintAmount);
-
-        return mintAmount;
-    }
-
-    /**
      * @dev View function to see pending ACTR on frontend.
      * @return Pending ACTR amount.
      * 
@@ -237,9 +200,9 @@ contract MasterChef {
         if (block.timestamp > pool.lastRewardTime && lpSupply != 0) {
             uint256 totalRewards = _getFarmEmissions(pool.lastRewardTime, block.timestamp);
             uint256 actrReward = totalRewards * pool.allocPoint / totalAllocPoint;
-            accActrPerShare = accActrPerShare + (actrReward * 1e12 / lpSupply);
+            accActrPerShare = accActrPerShare + (actrReward * ACC_ACTR_PRECISION / lpSupply);
         }
-        return (user.amount * accActrPerShare / 1e12) - user.rewardDebt;
+        return (user.amount * accActrPerShare / ACC_ACTR_PRECISION) - user.rewardDebt;
     }
 
     /**
@@ -306,7 +269,7 @@ contract MasterChef {
 
         actr.mint(address(this), actrReward);
 
-        pool.accActrPerShare = pool.accActrPerShare + (actrReward * 1e12 / lpSupply);
+        pool.accActrPerShare = pool.accActrPerShare + (actrReward * ACC_ACTR_PRECISION / lpSupply);
         pool.lastRewardTime = block.timestamp;
     }
 
@@ -321,10 +284,10 @@ contract MasterChef {
 
         updatePool(_pid);
 
-        uint256 pending = (user.amount * pool.accActrPerShare / 1e12) - user.rewardDebt;
+        uint256 pending = (user.amount * pool.accActrPerShare / ACC_ACTR_PRECISION) - user.rewardDebt;
 
         user.amount = user.amount + _amount;
-        user.rewardDebt = user.amount * pool.accActrPerShare / 1e12;
+        user.rewardDebt = user.amount * pool.accActrPerShare / ACC_ACTR_PRECISION;
 
         if (pending > 0) {
             safeActrTransfer(msg.sender, pending);
@@ -348,10 +311,10 @@ contract MasterChef {
 
         updatePool(_pid);
 
-        uint256 pending = (user.amount * pool.accActrPerShare / 1e12) - user.rewardDebt;
+        uint256 pending = (user.amount * pool.accActrPerShare / ACC_ACTR_PRECISION) - user.rewardDebt;
 
         user.amount = user.amount - _amount;
-        user.rewardDebt = user.amount * pool.accActrPerShare / 1e12;
+        user.rewardDebt = user.amount * pool.accActrPerShare / ACC_ACTR_PRECISION;
 
         if (pending > 0) {
             safeActrTransfer(msg.sender, pending);
@@ -376,11 +339,4 @@ contract MasterChef {
         }
     }
 
-    /**
-     * @dev Transfers team address to a new account.
-     */
-    function transferTeamAddress(address newTeamAddress) external {
-        require(msg.sender == _teamAddress, "A025");
-        _teamAddress = newTeamAddress;
-    }
 }

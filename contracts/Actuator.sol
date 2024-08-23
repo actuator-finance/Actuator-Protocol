@@ -7,11 +7,6 @@ import { HEXTimeToken } from "./HEXTimeToken.sol";
 import { HEXTimeTokenManager } from "./HEXTimeTokenManager.sol";
 
 contract Actuator is ERC20 {
-    uint256 public totalShares;
-    uint256 public lastUpdate;
-    uint256 public totalDividendPoints;
-    uint256 pointMultiplier = 10e18;
-
     uint256 private constant MIN_VAULT_TIME = 90 days;
 
     HEXTimeTokenManager public _httm;

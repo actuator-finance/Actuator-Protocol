@@ -49,7 +49,6 @@ contract HEXTimeTokenManager {
 
     address public actuatorAddress;
     address public masterChefAddress;
-    address private _creator;
     IHEX private _hx;
     IHEXStakeInstanceManager private _hsim;
     IHedron private _hedron;
@@ -78,13 +77,13 @@ contract HEXTimeTokenManager {
         uint72[] memory initialPayouts,
         uint256 farmStartTime,
         uint256[3] memory _farmSupplySchedule,
-        uint256[3] memory _teamSupplySchedule,
+        uint256 _teamSupply,
         uint256[14] memory _poolPointSchedule
     ) {
         _hx = IHEX(HEX_ADDRESS);
         _hsim = IHEXStakeInstanceManager(HSIM_ADDRESS);
         _hedron = IHedron(HEDRON_ADDRESS);
-        MasterChef masterChef = new MasterChef(teamAddress, factoryAddress, farmStartTime, _farmSupplySchedule, _teamSupplySchedule, _poolPointSchedule);
+        MasterChef masterChef = new MasterChef(teamAddress, factoryAddress, farmStartTime, _farmSupplySchedule, _teamSupply, _poolPointSchedule);
         actuatorAddress = address(masterChef.actr());
         masterChefAddress = address(masterChef);
         payouts = initialPayouts;

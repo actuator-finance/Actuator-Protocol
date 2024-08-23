@@ -12,7 +12,7 @@
     "deployLocal": "npx hardhat run --network localhost scripts/dev/deploy.ts",
     "stressTest": "npx hardhat run --network localhost scripts/dev/stressTest.ts",
     "deploy": "npx hardhat run --network dev_remote scripts/dev/deploy.ts",
-    "deploy_pulsechain_testnet": "npx hardhat run --network pulsechain_testnet scripts/dev/deploy.ts",
+    "deploy_pulsechain_testnet": "npx hardhat run --network pulsechain_testnet scripts/deploy.ts",
     "setup": "npx hardhat run --network dev_remote scripts/dev/setup.ts",
     "coverage": "npx hardhat coverage"
   },
