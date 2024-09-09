@@ -69,7 +69,6 @@ describe("Actuator Protocol", function () {
       // await Util.getPayouts(), 
       currentTime,
       Const.FARM_EMISSION_SCHEDULE,
-      Const.TEAM_EMISSION,  
       Const.POOL_POINT_SCHEDULE,
     );
     httManagerAddress = await httManager.getAddress()
@@ -655,7 +654,7 @@ describe("Actuator Protocol", function () {
     await timeLock.connect(props.owners[1]).transferUnlockedFunds();
     const bal0 = await actr.balanceOf(props.owners[0].address)
     const bal1 = await actr.balanceOf(props.owners[1].address)
-    expect(bal0 + bal1).to.be.greaterThanOrEqual(Const.TEAM_EMISSION - 2n); // allow up to 2n for rounding errors
+    expect(bal0 + bal1).to.be.greaterThanOrEqual((Const.TEAM_EMISSION - Const.FORGE_ALLOCATION) - 2n); // allow up to 2n for rounding errors
 
 
     const startTime = await masterChef.startTime();
@@ -663,7 +662,7 @@ describe("Actuator Protocol", function () {
       startTime, 
       startTime + (86400n * 365n * 4n)
     )    
-    expect(value).to.be.equal(Const.TEAM_EMISSION);
+    expect(value).to.be.equal(Const.TEAM_EMISSION - Const.FORGE_ALLOCATION);
   });
 
   it("ACTR Emissions", async function () {

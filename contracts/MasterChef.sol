@@ -73,7 +73,6 @@ contract MasterChef {
         address _factoryAddress,
         uint256 _startTime,
         uint256[3] memory _farmEmissionSchedule,
-        uint256 teamEmission,
         uint256[14] memory _poolPointSchedule
     ) {
         _httManager = HEXTimeTokenManager(msg.sender);
@@ -82,7 +81,7 @@ contract MasterChef {
         farmEmissionSchedule = _farmEmissionSchedule;
         poolPointSchedule = _poolPointSchedule;
         factory = IPulseXFactory(_factoryAddress);
-        actr.mint(teamAddress, teamEmission);
+        actr.mint(teamAddress, 250000000 * 1e18);
     }
 
     /**
