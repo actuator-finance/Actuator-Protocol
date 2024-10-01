@@ -15,8 +15,9 @@ export const PAYOUT_START_DAY = 800;
 
 const scaler = 1000000000000000000n
 export const FARM_EMISSION_SCHEDULE: [bigint, bigint, bigint] = [350000000n * scaler, 250000000n * scaler, 150000000n * scaler]
-export const TEAM_EMISSION_SCHEDULE: [bigint, bigint, bigint] = [111360000n * scaler, 79680000n * scaler, 48960000n * scaler]
+export const TEAM_EMISSION_SCHEDULE: [bigint, bigint, bigint] = [88160000n * scaler, 63080000n * scaler, 38760000n * scaler]
 export const TEAM_EMISSION: bigint = 250000000n * scaler
+export const LIQUIDITY_ALLOCATION: bigint = 50000000n * scaler
 export const FORGE_ALLOCATION: bigint = 10000000n * scaler
 export const POOL_POINT_SCHEDULE = [
   // year 1

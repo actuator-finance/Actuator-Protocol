@@ -20,7 +20,7 @@ const config: HardhatUserConfig = {
       blockGasLimit: 1000000000,
       forking: {
         url: process.env.ALCHEMY_URL as string,
-        blockNumber: 20000000,
+        // blockNumber: 20000000,
       },
     },
     localhost: {

@@ -60,7 +60,7 @@ describe("Actuator Protocol", function () {
     
     const factory = await ethers.getContractFactory("HEXTimeTokenManager");
 
-    const currentTime = (await ethers.provider.getBlock('latest')).timestamp + SECS_PER_DAY * 10;
+    const currentTime = (await ethers.provider.getBlock('latest')).timestamp + SECS_PER_DAY;
 
     httManager = await factory.deploy(
       owner1.address, 
@@ -628,7 +628,7 @@ describe("Actuator Protocol", function () {
       Const.TEAM_EMISSION_SCHEDULE,  
     );
     const timeLockAddress = await timeLock.getAddress()
-    await actr.connect(props.owners[0]).transfer(timeLockAddress, Const.TEAM_EMISSION)
+    await actr.connect(props.owners[0]).transfer(timeLockAddress, Const.TEAM_EMISSION - Const.LIQUIDITY_ALLOCATION)
     
     await timeLock.connect(props.owners[0]).transferUnlockedFunds();
 
@@ -654,7 +654,7 @@ describe("Actuator Protocol", function () {
     await timeLock.connect(props.owners[1]).transferUnlockedFunds();
     const bal0 = await actr.balanceOf(props.owners[0].address)
     const bal1 = await actr.balanceOf(props.owners[1].address)
-    expect(bal0 + bal1).to.be.greaterThanOrEqual((Const.TEAM_EMISSION - Const.FORGE_ALLOCATION) - 2n); // allow up to 2n for rounding errors
+    expect(bal0 + bal1).to.be.greaterThanOrEqual((Const.TEAM_EMISSION - Const.LIQUIDITY_ALLOCATION - Const.FORGE_ALLOCATION) - 2n); // allow up to 2n for rounding errors
 
 
     const startTime = await masterChef.startTime();
@@ -662,7 +662,61 @@ describe("Actuator Protocol", function () {
       startTime, 
       startTime + (86400n * 365n * 4n)
     )    
-    expect(value).to.be.equal(Const.TEAM_EMISSION - Const.FORGE_ALLOCATION);
+    expect(value).to.be.equal(Const.TEAM_EMISSION - Const.LIQUIDITY_ALLOCATION - Const.FORGE_ALLOCATION);
+  });
+
+  it("Mint Team Allocation 2", async function () {
+    const props = await setup();
+    let bal = await actr.balanceOf(props.owners[0].address)
+    expect(bal).to.be.equal(Const.TEAM_EMISSION);
+
+    const timeLockFactory = await ethers.getContractFactory("TimeLock");
+    const actuatorAddress = await httManager.actuatorAddress()
+
+    const timeLock = await timeLockFactory.deploy(
+      actuatorAddress,
+      props.owner1.address, 
+      Const.TEAM_EMISSION_SCHEDULE,  
+    );
+    const timeLockAddress = await timeLock.getAddress()
+
+    // transfer to Forge    
+    await actr.connect(props.owners[0]).transfer(props.owners[2], Const.FORGE_ALLOCATION)
+
+    // transfer to Liqudity Pools    
+    await actr.connect(props.owners[0]).transfer(props.owners[2], Const.LIQUIDITY_ALLOCATION)
+
+    // transfer to TimeLock
+    console.log('Const.TEAM_EMISSION - Const.LIQUIDITY_ALLOCATION - Const.FORGE_ALLOCATION: ', Const.TEAM_EMISSION - Const.LIQUIDITY_ALLOCATION - Const.FORGE_ALLOCATION);
+    await actr.connect(props.owners[0]).transfer(timeLockAddress, Const.TEAM_EMISSION - Const.LIQUIDITY_ALLOCATION - Const.FORGE_ALLOCATION)
+    
+    await ethers.provider.send("evm_increaseTime", [SECS_PER_DAY + 100]);
+    await ethers.provider.send("evm_mine"); 
+
+    await timeLock.connect(props.owners[0]).transferUnlockedFunds();
+  
+    // const bal1 = await actr.balanceOf(props.owners[0].address)
+    // console.log('bal1: ', bal1 / 1000000000000000000n);
+
+    let day = 0
+    const weeks = 3*56
+    for (let i = 0; i < weeks; i++) {
+      await ethers.provider.send("evm_increaseTime", [SECS_PER_DAY * 7]);
+      await ethers.provider.send("evm_mine"); 
+      await timeLock.connect(props.owners[i <= 100? 0: 1]).transferUnlockedFunds();
+      if (i === 100) {
+        await timeLock.connect(props.owners[0]).transferTeamAddress(props.owners[1]);
+      }
+      // const bal = await actr.balanceOf(props.owners[0].address)
+
+      // console.log(`${i * 7}: ${bal / 1000000000000000000n}`);
+    }
+    
+    const bal2 = await actr.balanceOf(props.owners[0].address)
+    console.log('bal2: ', bal2 / 1000000000000000000n);
+    const bal3 = await actr.balanceOf(props.owners[1].address)
+    console.log('bal3: ', bal3 / 1000000000000000000n);
+    console.log((bal2 + bal3) / 1000000000000000000n);
   });
 
   it("ACTR Emissions", async function () {

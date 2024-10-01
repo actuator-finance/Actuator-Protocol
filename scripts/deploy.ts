@@ -10,7 +10,7 @@ async function main() {
     process.env.TEAM_ADDRESS, 
     process.env.PULSEX_FACTORY_ADDRESS,
     payouts, 
-    currentTime + (60*60 * 5),
+    currentTime + (60*60 * 24),
     Const.FARM_EMISSION_SCHEDULE,
     Const.POOL_POINT_SCHEDULE,
   ]);
