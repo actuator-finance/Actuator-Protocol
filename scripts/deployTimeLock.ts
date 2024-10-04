@@ -2,7 +2,7 @@ import { ethers } from "hardhat";
 import * as Const from "./constants";
 
 async function main() {
-  const actuatorAddress = '0x08B2A0BCc821730C1f7c36CC89B1F7393Db61cc7'
+  const actuatorAddress = ''
   const lock = await ethers.deployContract("TimeLock", [
     actuatorAddress,
     process.env.TEAM_ADDRESS_2 as string, 

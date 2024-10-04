@@ -4,12 +4,11 @@ import * as Util from "./util";
 
 async function main() {
   const currentTime = Math.floor(Date.now() / 1000);
-  const payouts = await Util.getPayoutsTemp()
 
   const lock = await ethers.deployContract("HEXTimeTokenManager", [
     process.env.TEAM_ADDRESS, 
     process.env.PULSEX_FACTORY_ADDRESS,
-    payouts, 
+    [0n], 
     currentTime + (60*60 * 24),
     Const.FARM_EMISSION_SCHEDULE,
     Const.POOL_POINT_SCHEDULE,

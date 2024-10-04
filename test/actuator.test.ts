@@ -392,7 +392,7 @@ describe("Actuator Protocol", function () {
       Const.TEAM_EMISSION_SCHEDULE,  
     );
     const timeLockAddress = await timeLock.getAddress()
-    await actr.connect(props.owners[0]).transfer(timeLockAddress, Const.TEAM_EMISSION)
+    await actr.connect(props.owners[0]).transfer(timeLockAddress, Const.INITIAL_MINT)
 
     let day = Number(await hex.currentDay())
     // console.log('day: ', day);
@@ -617,7 +617,7 @@ describe("Actuator Protocol", function () {
   it("Mint Team Allocation", async function () {
     const props = await setup();
     let bal = await actr.balanceOf(props.owners[0].address)
-    expect(bal).to.be.equal(Const.TEAM_EMISSION);
+    expect(bal).to.be.equal(Const.INITIAL_MINT);
 
     const timeLockFactory = await ethers.getContractFactory("TimeLock");
     const actuatorAddress = await httManager.actuatorAddress()
@@ -628,7 +628,7 @@ describe("Actuator Protocol", function () {
       Const.TEAM_EMISSION_SCHEDULE,  
     );
     const timeLockAddress = await timeLock.getAddress()
-    await actr.connect(props.owners[0]).transfer(timeLockAddress, Const.TEAM_EMISSION - Const.LIQUIDITY_ALLOCATION)
+    await actr.connect(props.owners[0]).transfer(timeLockAddress, Const.INITIAL_MINT - Const.LIQUIDITY_ALLOCATION)
     
     await timeLock.connect(props.owners[0]).transferUnlockedFunds();
 
@@ -654,7 +654,7 @@ describe("Actuator Protocol", function () {
     await timeLock.connect(props.owners[1]).transferUnlockedFunds();
     const bal0 = await actr.balanceOf(props.owners[0].address)
     const bal1 = await actr.balanceOf(props.owners[1].address)
-    expect(bal0 + bal1).to.be.greaterThanOrEqual((Const.TEAM_EMISSION - Const.LIQUIDITY_ALLOCATION - Const.FORGE_ALLOCATION) - 2n); // allow up to 2n for rounding errors
+    expect(bal0 + bal1).to.be.greaterThanOrEqual((Const.INITIAL_MINT - Const.LIQUIDITY_ALLOCATION - Const.FORGE_ALLOCATION) - 2n); // allow up to 2n for rounding errors
 
 
     const startTime = await masterChef.startTime();
@@ -662,13 +662,13 @@ describe("Actuator Protocol", function () {
       startTime, 
       startTime + (86400n * 365n * 4n)
     )    
-    expect(value).to.be.equal(Const.TEAM_EMISSION - Const.LIQUIDITY_ALLOCATION - Const.FORGE_ALLOCATION);
+    expect(value).to.be.equal(Const.INITIAL_MINT - Const.LIQUIDITY_ALLOCATION - Const.FORGE_ALLOCATION);
   });
 
   it("Mint Team Allocation 2", async function () {
     const props = await setup();
     let bal = await actr.balanceOf(props.owners[0].address)
-    expect(bal).to.be.equal(Const.TEAM_EMISSION);
+    expect(bal).to.be.equal(Const.INITIAL_MINT);
 
     const timeLockFactory = await ethers.getContractFactory("TimeLock");
     const actuatorAddress = await httManager.actuatorAddress()
@@ -687,8 +687,8 @@ describe("Actuator Protocol", function () {
     await actr.connect(props.owners[0]).transfer(props.owners[2], Const.LIQUIDITY_ALLOCATION)
 
     // transfer to TimeLock
-    console.log('Const.TEAM_EMISSION - Const.LIQUIDITY_ALLOCATION - Const.FORGE_ALLOCATION: ', Const.TEAM_EMISSION - Const.LIQUIDITY_ALLOCATION - Const.FORGE_ALLOCATION);
-    await actr.connect(props.owners[0]).transfer(timeLockAddress, Const.TEAM_EMISSION - Const.LIQUIDITY_ALLOCATION - Const.FORGE_ALLOCATION)
+    console.log('Const.INITIAL_MINT - Const.LIQUIDITY_ALLOCATION - Const.FORGE_ALLOCATION: ', Const.INITIAL_MINT - Const.LIQUIDITY_ALLOCATION - Const.FORGE_ALLOCATION);
+    await actr.connect(props.owners[0]).transfer(timeLockAddress, Const.INITIAL_MINT - Const.LIQUIDITY_ALLOCATION - Const.FORGE_ALLOCATION)
     
     await ethers.provider.send("evm_increaseTime", [SECS_PER_DAY + 100]);
     await ethers.provider.send("evm_mine"); 
