@@ -15,3 +15,4 @@ artifacts
 docs
 abi
 contracts/TimeLock.sol
+scripts/arguments.js
